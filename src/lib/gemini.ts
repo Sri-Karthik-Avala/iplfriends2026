@@ -42,7 +42,24 @@ ${currentText}
 How this affected the overall season standings:
 ${lbText}
 
-Write a 2-3 paragraph epic narrative summary of these results. Analyze the leaderboard changes (who climbed, who fell, who maintained their lead). Assign awesome fantasy-style titles to at least 2 or 3 of the players (e.g. "Rightful Wizard of Guesses", "Greatest Comeback", "Hidden Magician of Choices", "The Fallen King", etc.) based on their performance and overall rank changes today. Explain WHY they earned the title playfully. Do not use markdown headers, just return elegant paragraphs.`;
+Write a structured, player-wise match commentary. Format it EXACTLY like this:
+
+1. Start with a short 1-2 sentence epic match intro/headline.
+
+2. Then for EACH player (ranked 1st to last), write a structured block like:
+🥇 [PlayerName] — "[Epic Fantasy Title]"
+[My11 Score] pts | +[Rank Points] rank pts
+[1-2 sentences about their performance, why they earned this title, and how it affects their season standing]
+
+3. End with a 1-2 sentence season outlook teaser.
+
+Rules:
+- Every player gets a unique, creative fantasy-style title (e.g. "The Arcane Oracle of RCB", "The Shadow Strategist", "The Fallen Titan", "The Silent Assassin of Points")
+- Use medal emojis: 🥇 for 1st, 🥈 for 2nd, 🥉 for 3rd, then numbered for rest
+- Titles should reflect their performance THIS match and overall season trajectory
+- Keep it fun, dramatic, and engaging
+- Do NOT use markdown headers (no # or ##). Use plain text with the emoji/dash format above
+- Separate each player block with a blank line`;
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
       method: 'POST',
