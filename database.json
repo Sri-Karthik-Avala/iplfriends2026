@@ -1,0 +1,55 @@
+{
+  "players": [
+    {
+      "id": "player-siri",
+      "name": "Siri",
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png",
+      "team": "Sunrisers Hyderabad",
+      "teamColor": "#F26522"
+    },
+    {
+      "id": "player-sasank",
+      "name": "Sasank",
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png",
+      "team": "Royal Challengers Bengaluru",
+      "teamColor": "#EC1C24"
+    },
+    {
+      "id": "player-donga",
+      "name": "Donga",
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png",
+      "team": "Sunrisers Hyderabad",
+      "teamColor": "#F26522"
+    },
+    {
+      "id": "player-sampath",
+      "name": "Sampath",
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png",
+      "team": "Sunrisers Hyderabad",
+      "teamColor": "#F26522"
+    },
+    {
+      "id": "player-ak",
+      "name": "Ak",
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png",
+      "team": "Kolkata Knight Riders",
+      "teamColor": "#3A225D"
+    },
+    {
+      "id": "player-umesh",
+      "name": "Umesh",
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png",
+      "team": "Mumbai Indians",
+      "teamColor": "#004BA0"
+    },
+    {
+      "id": "player-rohit",
+      "name": "Rohit",
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png",
+      "team": "Punjab Kings",
+      "teamColor": "#D71920"
+    }
+  ],
+  "matchResults": [],
+  "matchSummaries": []
+}
