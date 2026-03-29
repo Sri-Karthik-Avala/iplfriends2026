@@ -65,7 +65,7 @@ export default function LeaderboardPage() {
         <div>
           <div className="section-header">
             <h2>Season Standings</h2>
-            <p>Daily Match Ranks grant Points (1st=50, 2nd=40, etc.). The HIGHEST total Rank Points wins the season!</p>
+            <p>Points = Players - Rank + 1. More competition, more points! The HIGHEST total wins the season!</p>
           </div>
 
           {loading && <p style={{ color: 'var(--muted-foreground)' }}>Loading...</p>}

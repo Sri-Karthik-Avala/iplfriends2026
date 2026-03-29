@@ -4,15 +4,10 @@ import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
-const SCORING_RULES: Record<number, number> = {
-  1: 50,
-  2: 40,
-  3: 30,
-  4: 20,
-  5: 10,
-  6: 5,
-  7: 2,
-};
+// Dynamic scoring: points = totalParticipants - rank + 1
+// e.g. 7 players: 1st=7, 2nd=6, ..., 7th=1
+// e.g. 5 players: 1st=5, 2nd=4, ..., 5th=1
+const calcLeaguePoints = (rank: number, totalParticipants: number) => Math.max(totalParticipants - rank + 1, 0);
 
 export async function POST(req: Request) {
   try {
@@ -26,12 +21,13 @@ export async function POST(req: Request) {
     if (delError) throw delError;
 
     // Map and insert new results
+    const totalParticipants = results.length;
     const toInsert = results.map((r: any) => ({
       match_id: r.matchId,
       player_id: r.playerId,
       rank: r.rank,
       dream11_points: r.dream11Points,
-      league_points: SCORING_RULES[r.rank] || 0
+      league_points: calcLeaguePoints(r.rank, totalParticipants)
     }));
 
     const { error: insError } = await supabase.from('match_results').insert(toInsert);
