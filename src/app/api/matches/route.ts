@@ -46,7 +46,13 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json(merged);
+    return NextResponse.json(merged, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'CDN-Cache-Control': 'no-store',
+        'Vercel-CDN-Cache-Control': 'no-store'
+      }
+    });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
