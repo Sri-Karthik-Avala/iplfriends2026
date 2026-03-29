@@ -9,4 +9,10 @@ if (!supabaseUrl || !supabaseServiceKey) {
 
 // We use the Service Role Key here because this file represents the trusted Server-Side API layer.
 // This allows us to interact with the database without managing individual user Row Level Security (RLS) tokens.
-export const supabase = createClient(supabaseUrl, supabaseServiceKey);
+export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+  global: {
+    fetch: (url, options = {}) => {
+      return fetch(url, { ...options, cache: 'no-store' });
+    }
+  }
+});
