@@ -1,8 +1,8 @@
 import { MATCHES } from '@/lib/constants';
 
 export async function generateSummary(currentMatchId: string, currentResults: any[], db: any) {
-  if (!process.env.GEMINI_API_KEY) {
-    console.log("No GEMINI_API_KEY found, skipping summary generation.");
+  if (!process.env.OPENAI_API_KEY) {
+    console.log("No OPENAI_API_KEY found, skipping summary generation.");
     return null;
   }
 
@@ -62,56 +62,66 @@ export async function generateSummary(currentMatchId: string, currentResults: an
       currentText += `\nDid NOT play this match (0 pts): ${absent.map((p: any) => p.name).join(', ')}\n`;
     }
 
-    const prompt = `You are a ruthless, hilarious fantasy sports commentator for the "IPL Friends League" — a group of friends predicting cricket matches. A match just finished!
+    const systemPrompt = `You are a savage IPL fantasy league commentator who writes like a mix of Harsha Bhogle, toxic WhatsApp group banter, and IPL memes. You write SHORT, PUNCHY player descriptions for a friends league leaderboard.
 
-Performance in this single match:
+STYLE: IPL commentary mixed with unhinged group chat energy. Every line should make someone laugh or get triggered.`;
+
+    const userPrompt = `A match just finished in the IPL Friends League! Write short IPL-style descriptions (3-4 lines each) for every player.
+
+Performance in this match:
 ${currentText}
 
-How this affected the overall season standings:
+Season standings impact:
 ${lbText}
 ${recentForm}
 
-Write a structured, player-wise match commentary. Format it EXACTLY like this:
+FORMAT — follow this EXACTLY for each player:
 
-1. Start with a 1-2 sentence epic match intro/headline.
+🥇 [Name] — "[Savage Nickname/Title]"
+[My11 Score] pts | +[Rank Points] rank pts | Season: #X [↑/↓/—]
+[3-4 lines of SHORT, PUNCHY commentary. No long paragraphs.]
 
-2. Then for EACH player (ranked 1st to last in THIS match), write a block:
-🥇 [PlayerName] — "[Epic Fantasy Title]"
-[My11 Score] pts | +[Rank Points] rank pts | Season rank: #X [↑/↓/—]
-[2-3 sentences about their performance and season trajectory]
+Use 🥇🥈🥉 for top 3, then 4️⃣5️⃣6️⃣7️⃣ etc. Use 💀 for absent players.
 
-3. If anyone was ABSENT (didn't play), add a block for them too:
-💀 [PlayerName] — "[Shameful Absence Title]"
-DNP | +0 rank pts | Season rank: #X
-[1-2 sentences roasting them for skipping]
+RULES:
+- Each player gets a NICKNAME/TITLE (creative, funny, IPL-themed)
+- 3-4 lines of commentary per player. SHORT. PUNCHY. No essays.
+- Include: today's impact, overall trend, at least 1 roast/troll line per player
+- Compare to IPL teams/players (RCB choke, CSK clutch, PBKS chaos, MI rebuild, etc.)
 
-4. End with a 1-2 sentence season outlook teaser.
+TONE BY RANK:
+- TOP 3: Hype like match-winners and legends. "The Dhoni of this league." But still sneak in one cheeky line.
+- MID players (4-5): Inconsistent merchants. "Almost" guys. The "we had them in the first half" types. Roast their inability to close.
+- BOTTOM players (6+): FULL MEME MODE. Unhinged brutal trolling. "Bro picked players like he was blindfolded." "The RCB of this league — all hype, zero trophies." "Should retire from fantasy cricket."
+- ABSENT players: Roast them HARDEST. "Too scared to even open the app." "Probably still recovering from last match's L."
 
-TONE RULES — THIS IS CRITICAL:
-- TOP 3 (ranks 1-3): Celebrate them with glory, hype, and epic praise. Give them heroic, legendary titles.
-- RANKS 4+: ROAST THEM. Be savage, funny, and brutally honest. Mock their poor player choices, their falling ranks, their inability to predict cricket. Give them humiliating, funny titles like "The Certified Cricket Fraud", "The Human Coin Flip", "The Walking L", "Chief of Bad Decisions", "The Bottom-Feeder Baron". Make your friends laugh at them.
-- ABSENT PLAYERS: Roast them the hardest. They were too lazy/scared to even play. Titles like "The Great Deserter", "The Phantom of Zero Points", "Couch Potato Royale".
-- Use the BEFORE/AFTER leaderboard to call out rank drops ("fell from #3 to #5 — a disgraceful collapse") and streaks of bad form from recent history.
-- Reference their recent form if available — if someone has been ranking low for multiple matches, escalate the roast.
-- If someone rose in ranks, acknowledge the comeback but warn them not to get cocky.
-- Use medal emojis: 🥇 1st, 🥈 2nd, 🥉 3rd, then 4️⃣ 5️⃣ 6️⃣ 7️⃣ etc for rest
-- Every player gets a unique creative title reflecting THIS match performance
-- Do NOT use markdown headers (no # or ##). Plain text with emoji/dash format.
-- Separate each player block with a blank line
-- Keep it fun — this is friends roasting friends, not actual insults. Think fantasy sports banter.`;
+- Reference rank changes: call out drops ("fell from #3 to #6 — absolute bottlejob") and rises ("climbed 2 spots — don't get cocky")
+- Reference recent form if available — if someone's been trash for 3 matches, ESCALATE the roast
+- End with a 1-2 line spicy season outlook
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+DO NOT use markdown headers. Plain text with emojis. Separate each player with a blank line. Keep it FUN — friends roasting friends, not hate.`;
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }]
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.9,
+        max_tokens: 1500
       })
     });
 
     const data = await response.json();
-    return data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+    return data?.choices?.[0]?.message?.content || null;
   } catch (err) {
-    console.error("Gemini summary failed:", err);
+    console.error("AI summary failed:", err);
     return null;
   }
 }
