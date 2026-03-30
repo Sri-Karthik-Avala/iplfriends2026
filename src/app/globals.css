@@ -243,6 +243,24 @@ body {
   color: var(--muted-foreground);
 }
 
+.player-card .player-title {
+  font-size: 11px;
+  color: #f59e0b;
+  font-style: italic;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+@media (max-width: 640px) {
+  .player-card .player-title {
+    max-width: 120px;
+    font-size: 10px;
+  }
+}
+
 .player-card .player-points {
   text-align: right;
   flex-shrink: 0;
@@ -301,6 +319,52 @@ body {
   border-color: var(--muted-foreground);
   color: var(--foreground);
   background: rgba(255, 255, 255, 0.02);
+}
+
+/* AI Summary Card */
+.ai-summary-card {
+  background: linear-gradient(135deg, rgba(236,28,36,0.04) 0%, rgba(255,255,60,0.04) 100%);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  box-shadow: 0 4px 20px -5px rgba(0,0,0,0.3);
+}
+
+.ai-summary-card .summary-player-line {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--foreground);
+  margin-bottom: 2px;
+  line-height: 1.4;
+}
+
+.ai-summary-card .summary-stats-line {
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+  font-family: monospace;
+  margin-bottom: 4px;
+}
+
+.ai-summary-card .summary-text-line {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  line-height: 1.5;
+  margin-bottom: 2px;
+}
+
+@media (max-width: 640px) {
+  .ai-summary-card {
+    padding: 1rem;
+  }
+  .ai-summary-card .summary-player-line {
+    font-size: 0.875rem;
+  }
+  .ai-summary-card .summary-stats-line {
+    font-size: 0.75rem;
+  }
+  .ai-summary-card .summary-text-line {
+    font-size: 0.8rem;
+  }
 }
 
 /* Match Detail Page */

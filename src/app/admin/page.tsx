@@ -23,6 +23,8 @@ export default function AdminPage() {
   );
   const [isEditing, setIsEditing] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isRegeneratingAll, setIsRegeneratingAll] = useState(false);
+  const [regenAllStatus, setRegenAllStatus] = useState('');
   
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -203,12 +205,32 @@ export default function AdminPage() {
         setSelectedMatch({ ...selectedMatch, summary: data.summary });
         fetchMatches(); // refresh match lists
       } else {
-        alert('Generation failed (Ensure GEMINI_API_KEY is in .env)');
+        alert('Generation failed (Ensure OPENAI_API_KEY is in .env)');
       }
     } catch(err) {
       alert('Network error generating summary');
     } finally {
       setIsRegenerating(false);
+    }
+  };
+
+  const handleRegenerateAllSummaries = async () => {
+    if (!confirm('Regenerate AI summaries for ALL completed matches? This may take a while.')) return;
+    setIsRegeneratingAll(true);
+    setRegenAllStatus('Starting...');
+    try {
+      const res = await fetch('/api/matches/summarize-all', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setRegenAllStatus(`Done! ${data.generated}/${data.totalMatches} matches regenerated.`);
+        fetchMatches();
+      } else {
+        setRegenAllStatus('Failed: ' + data.error);
+      }
+    } catch(err) {
+      setRegenAllStatus('Network error');
+    } finally {
+      setIsRegeneratingAll(false);
     }
   };
 
@@ -282,11 +304,17 @@ export default function AdminPage() {
   return (
     <div className="container animate-fade" style={{ paddingTop: '1rem' }}>
       
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
         <button className="btn btn-secondary" onClick={() => setActiveModal('player')}>Add Player Component</button>
         <button className="btn btn-secondary" onClick={() => setActiveModal('match')}>Add Single Match</button>
         <button className="btn btn-secondary" onClick={() => setActiveModal('bulk')}>JSON Upload Matches</button>
+        <button className="btn btn-primary" onClick={handleRegenerateAllSummaries} disabled={isRegeneratingAll}>
+          {isRegeneratingAll ? '⏳ Regenerating All...' : '✨ Regenerate All Summaries'}
+        </button>
       </div>
+      {regenAllStatus && (
+        <p style={{ fontSize: '0.85rem', color: 'var(--muted-foreground)', marginBottom: '1rem' }}>{regenAllStatus}</p>
+      )}
 
       <div className="split-layout">
         

@@ -1,9 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { TEAMS } from '@/lib/constants';
 import PlayerProfile from './components/PlayerProfile';
 import Link from 'next/link';
+
+// Extract player title from AI summary text
+// Looks for patterns like: 🥇 Siri — "The Oracle of RCB"
+function extractPlayerTitle(summary: string, playerName: string): string | null {
+  if (!summary || !playerName) return null;
+  const escaped = playerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(?:🥇|🥈|🥉|[0-9]️⃣|💀)\\s+${escaped}\\s*—\\s*"([^"]+)"`, 'i');
+  const match = summary.match(regex);
+  return match ? match[1] : null;
+}
+
+// Extract a player's full block from the summary
+function extractPlayerBlock(summary: string, playerName: string): string | null {
+  if (!summary || !playerName) return null;
+  const escaped = playerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`((?:🥇|🥈|🥉|[0-9]️⃣|💀)\\s+${escaped}\\s*—[\\s\\S]*?)(?=(?:🥇|🥈|🥉|[0-9]️⃣|💀)\\s+\\w|$)`, 'i');
+  const match = summary.match(regex);
+  return match ? match[1].trim() : null;
+}
 
 export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
@@ -50,6 +69,13 @@ export default function LeaderboardPage() {
   const visibleCompleted = showAllCompleted ? completedMatches : completedMatches.slice(0, 5);
   const visibleUpcoming = showAllUpcoming ? upcomingMatches : upcomingMatches.slice(0, 5);
 
+  // Get latest completed match with a summary
+  const latestSummaryMatch = useMemo(() => {
+    return completedMatches.find(m => m.summary);
+  }, [completedMatches]);
+
+  const latestSummary = latestSummaryMatch?.summary || null;
+
   const getRankDisplay = (idx: number) => {
     if (idx === 0) return { emoji: '🥇', className: 'rank-1' };
     if (idx === 1) return { emoji: '🥈', className: 'rank-2' };
@@ -95,6 +121,7 @@ export default function LeaderboardPage() {
 
           {!loading && leaderboard.map((lb: any, idx: number) => {
             const rank = getRankDisplay(idx);
+            const playerTitle = latestSummary ? extractPlayerTitle(latestSummary, lb.player.name) : null;
             return (
               <div
                 key={lb.player.id}
@@ -107,7 +134,11 @@ export default function LeaderboardPage() {
                 <img src={lb.player.imageUrl} alt={lb.player.name} className="player-avatar" style={{ borderColor: lb.player.teamColor }} />
                 <div className="player-info">
                   <div className="player-name">{lb.player.name}</div>
-                  <div className="player-team">{lb.player.team}</div>
+                  {playerTitle ? (
+                    <div className="player-title">"{playerTitle}"</div>
+                  ) : (
+                    <div className="player-team">{lb.player.team}</div>
+                  )}
                 </div>
                 <div className="player-points">
                   <div className="points-value">{lb._sum.leaguePoints || 0}</div>
@@ -118,7 +149,38 @@ export default function LeaderboardPage() {
           })}
         </div>
 
-        {/* === SECTION 2: COMPLETED MATCHES === */}
+        {/* === SECTION 2: LATEST AI MATCH COMMENTARY === */}
+        {latestSummaryMatch && (
+          <div>
+            <div className="section-header">
+              <h2>✨ Latest Match Commentary</h2>
+              <p>{latestSummaryMatch.name} — {new Date(latestSummaryMatch.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+            </div>
+            <div className="ai-summary-card">
+              {latestSummary.split('\n').map((line: string, idx: number) => {
+                // Style player header lines (emoji + name + title)
+                if (/^(?:🥇|🥈|🥉|[0-9]️⃣|💀)/.test(line.trim())) {
+                  return <p key={idx} className="summary-player-line">{line}</p>;
+                }
+                // Style stats lines (pts | rank pts | season)
+                if (/pts\s*\|/.test(line)) {
+                  return <p key={idx} className="summary-stats-line">{line}</p>;
+                }
+                // Empty lines = spacing
+                if (line.trim() === '') {
+                  return <div key={idx} style={{ height: '0.75rem' }} />;
+                }
+                // Regular commentary
+                return <p key={idx} className="summary-text-line">{line}</p>;
+              })}
+            </div>
+            <Link href={`/match/${latestSummaryMatch.id}`} style={{ textDecoration: 'none' }}>
+              <button className="expand-btn" style={{ marginTop: '0.75rem' }}>View full match details →</button>
+            </Link>
+          </div>
+        )}
+
+        {/* === SECTION 3: COMPLETED MATCHES === */}
         <div>
           <div className="section-header">
             <h2>Completed Matches</h2>
@@ -164,7 +226,7 @@ export default function LeaderboardPage() {
           )}
         </div>
 
-        {/* === SECTION 3: UPCOMING MATCHES === */}
+        {/* === SECTION 4: UPCOMING MATCHES === */}
         <div>
           <div className="section-header">
             <h2><span className="badge badge-primary">Up Next</span> Upcoming Matches</h2>
