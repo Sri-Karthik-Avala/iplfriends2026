@@ -39,7 +39,7 @@ export async function generateSummary(currentMatchId: string, currentResults: an
     });
 
     // Build per-player recent form (last 3 matches)
-    const matchIds = [...new Set(db.matchResults.map((r: any) => r.matchId))].sort();
+    const matchIds = [...new Set(db.matchResults.map((r: any) => r.matchId))].sort((a: any, b: any) => Number(a) - Number(b));
     const recentMatchIds = matchIds.filter((id: any) => id !== currentMatchId).slice(-3);
     let recentForm = "\nRecent form (last 3 matches before this one):\n";
     db.players.forEach((p: any) => {
@@ -50,16 +50,37 @@ export async function generateSummary(currentMatchId: string, currentResults: an
       recentForm += `${p.name}: ${recent.join(', ') || 'No history'}\n`;
     });
 
+    // Build previous match details for context
+    const prevMatchId = matchIds.filter((id: any) => id !== currentMatchId).slice(-1)[0];
+    let prevMatchText = '';
+    if (prevMatchId) {
+      const prevMatch = MATCHES.find((m: any) => m.number.toString() === prevMatchId);
+      const prevResults = db.matchResults.filter((r: any) => r.matchId === prevMatchId).sort((a: any, b: any) => a.rank - b.rank);
+      if (prevMatch && prevResults.length > 0) {
+        prevMatchText = `\nPrevious match results (${prevMatch.name}):\n`;
+        prevResults.forEach((r: any) => {
+          prevMatchText += `  Rank ${r.rank}: ${getPlayerName(r.playerId)} — My11: ${r.dream11Points}, +${r.leaguePoints} pts\n`;
+        });
+      }
+    }
+
     let currentText = currentMatch ? `Match: ${currentMatch.name}\n` : '';
     const totalParticipants = currentResults.length;
+    currentText += `Total participants: ${totalParticipants}\n\n`;
+    currentText += `PLAYERS WHO PLAYED (use ONLY these My11 scores and rank points in your output):\n`;
     currentResults.sort((a:any,b:any) => a.rank - b.rank).forEach(r => {
-      currentText += `- ${getPlayerName(r.playerId)} finished Rank ${r.rank}/${totalParticipants} earning ${r.leaguePoints || '?'} rank points (My11 score: ${r.dream11Points}).\n`;
+      currentText += `  Rank ${r.rank}: ${getPlayerName(r.playerId)} — My11 score: ${r.dream11Points}, earned +${r.leaguePoints || 0} rank pts\n`;
     });
     // Note who didn't play
     const playedIds = new Set(currentResults.map((r: any) => r.playerId));
     const absent = db.players.filter((p: any) => !playedIds.has(p.id));
     if (absent.length > 0) {
-      currentText += `\nDid NOT play this match (0 pts): ${absent.map((p: any) => p.name).join(', ')}\n`;
+      currentText += `\nPLAYERS WHO DID NOT PLAY (DNP — 0 pts, roast them):\n`;
+      absent.forEach((p: any) => {
+        currentText += `  💀 ${p.name} — DNP\n`;
+      });
+    } else {
+      currentText += `\nAll players participated. There are NO absent players. Do NOT add any DNP/absent section.\n`;
     }
 
     const systemPrompt = `You are a savage IPL fantasy league commentator who writes like a mix of Harsha Bhogle, toxic WhatsApp group banter, and IPL memes. You write SHORT, PUNCHY player descriptions for a friends league leaderboard.
@@ -74,32 +95,41 @@ ${currentText}
 Season standings impact:
 ${lbText}
 ${recentForm}
+${prevMatchText}
 
-FORMAT — follow this EXACTLY for each player:
+FORMAT — follow this EXACTLY for each player who PLAYED:
 
 🥇 [Name] — "[Savage Nickname/Title]"
-[My11 Score] pts | +[Rank Points] rank pts | Season: #X [↑/↓/—]
-[3-4 lines of SHORT, PUNCHY commentary. No long paragraphs.]
+[EXACT My11 Score from data above] pts | +[EXACT Rank Points from data above] rank pts | Season: #[rank after] [↑/↓/—]
+[3-4 lines of SHORT, PUNCHY commentary.]
 
-Use 🥇🥈🥉 for top 3, then 4️⃣5️⃣6️⃣7️⃣ etc. Use 💀 for absent players.
+ONLY if there are DNP players listed above, add for each:
+💀 [Name] — "[Shameful Title]"
+DNP | +0 rank pts | Season: #[rank]
+[2 lines roasting them]
 
-RULES:
-- Each player gets a NICKNAME/TITLE (creative, funny, IPL-themed)
-- 3-4 lines of commentary per player. SHORT. PUNCHY. No essays.
-- Include: today's impact, overall trend, at least 1 roast/troll line per player
+Use 🥇🥈🥉 for top 3, then 4️⃣5️⃣6️⃣7️⃣ etc.
+
+⚠️ CRITICAL DATA RULES — FOLLOW EXACTLY:
+- Use ONLY the My11 scores and rank points from "PLAYERS WHO PLAYED" section above
+- Do NOT invent or change any numbers. Copy them exactly.
+- Do NOT add DNP/absent blocks unless players are explicitly listed under "PLAYERS WHO DID NOT PLAY"
+- If data says "All players participated", write ZERO DNP blocks
+- Each player appears EXACTLY ONCE in your output
+
+TONE RULES:
+- Each player gets a creative IPL-themed NICKNAME/TITLE
+- 3-4 lines per player. SHORT. PUNCHY. No essays.
 - Compare to IPL teams/players (RCB choke, CSK clutch, PBKS chaos, MI rebuild, etc.)
+- TOP 3 (this match): Hype like legends. Sneak in one cheeky line.
+- MID players (4-5): "Almost" merchants. Roast their inconsistency.
+- BOTTOM players (6+): FULL MEME MODE. Unhinged trolling. "Should retire from fantasy cricket."
+- ABSENT players (only if listed): Roast them HARDEST.
+- Call out rank changes from BEFORE/AFTER leaderboard
+- Reference recent form — if someone's been trash for 3 matches, ESCALATE
+- End with 1-2 line spicy season outlook
 
-TONE BY RANK:
-- TOP 3: Hype like match-winners and legends. "The Dhoni of this league." But still sneak in one cheeky line.
-- MID players (4-5): Inconsistent merchants. "Almost" guys. The "we had them in the first half" types. Roast their inability to close.
-- BOTTOM players (6+): FULL MEME MODE. Unhinged brutal trolling. "Bro picked players like he was blindfolded." "The RCB of this league — all hype, zero trophies." "Should retire from fantasy cricket."
-- ABSENT players: Roast them HARDEST. "Too scared to even open the app." "Probably still recovering from last match's L."
-
-- Reference rank changes: call out drops ("fell from #3 to #6 — absolute bottlejob") and rises ("climbed 2 spots — don't get cocky")
-- Reference recent form if available — if someone's been trash for 3 matches, ESCALATE the roast
-- End with a 1-2 line spicy season outlook
-
-DO NOT use markdown headers. Plain text with emojis. Separate each player with a blank line. Keep it FUN — friends roasting friends, not hate.`;
+No markdown headers. Plain text with emojis. Separate each player with a blank line.`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -113,8 +143,8 @@ DO NOT use markdown headers. Plain text with emojis. Separate each player with a
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.9,
-        max_tokens: 1500
+        temperature: 0.75,
+        max_tokens: 2000
       })
     });
 
