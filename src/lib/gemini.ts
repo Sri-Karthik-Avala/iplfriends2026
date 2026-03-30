@@ -143,7 +143,7 @@ No markdown headers. Plain text with emojis. Separate each player with a blank l
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.75,
+        temperature: 0.9,
         max_tokens: 2000
       })
     });
