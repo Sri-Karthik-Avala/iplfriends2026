@@ -55,7 +55,8 @@ export async function POST(req: Request) {
       })) || [];
 
       console.log(`Generating epic AI summary for match ${matchId}...`);
-      const summary = await generateSummary(matchId, jsResults, { players: jsPlayers, matchResults: jsResults });
+      const matchResults = jsResults.filter(r => r.matchId === matchId);
+      const summary = await generateSummary(matchId, matchResults, { players: jsPlayers, matchResults: jsResults });
 
       // Save summary via upsert into Supabase
       if (summary) {

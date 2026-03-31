@@ -25,7 +25,8 @@ export async function POST(req: Request) {
       name: p.name,
     })) || [];
 
-    const summary = await generateSummary(matchId, jsResults, { players: jsPlayers, matchResults: jsResults });
+    const matchResults = jsResults.filter(r => r.matchId === matchId);
+    const summary = await generateSummary(matchId, matchResults, { players: jsPlayers, matchResults: jsResults });
     if (!summary) throw new Error("Google Gemini failed to generate narrative.");
 
     const { error: sumError } = await supabase.from('match_summaries').upsert({
