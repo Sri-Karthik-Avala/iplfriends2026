@@ -8,7 +8,8 @@ export default function AdminPage() {
   const [matches, setMatches] = useState<any[]>([]);
   
   // Modals State
-  const [activeModal, setActiveModal] = useState<'player' | 'match' | 'bulk' | null>(null);
+  const [activeModal, setActiveModal] = useState<'player' | 'match' | 'bulk' | 'managePlayers' | null>(null);
+  const [deletingPlayerId, setDeletingPlayerId] = useState<string | null>(null);
 
   // Form State
   const [newPlayer, setNewPlayer] = useState({ name: '', team: '', teamColor: '#27272a', imageUrl: '' });
@@ -19,7 +20,7 @@ export default function AdminPage() {
   // Editor State
   const [selectedMatch, setSelectedMatch] = useState<any>(null);
   const [bulkResults, setBulkResults] = useState(
-    Array.from({ length: 6 }, (_, i) => ({ rank: i + 1, playerId: '', dream11Points: '' }))
+    Array.from({ length: 8 }, (_, i) => ({ rank: i + 1, playerId: '', dream11Points: '' }))
   );
   const [isEditing, setIsEditing] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
@@ -84,7 +85,7 @@ export default function AdminPage() {
     } else {
       // Upcoming match, open editing explicitly
       setIsEditing(true);
-      setBulkResults(Array.from({ length: 6 }, (_, i) => ({ rank: i + 1, playerId: '', dream11Points: '' })));
+      setBulkResults(Array.from({ length: 8 }, (_, i) => ({ rank: i + 1, playerId: '', dream11Points: '' })));
     }
   };
 
@@ -234,6 +235,38 @@ export default function AdminPage() {
     }
   };
 
+  const handleDeletePlayer = async (playerId: string, playerName: string) => {
+    const ok = confirm(
+      `Delete "${playerName}"?\n\nThis removes the player, all their match results, re-ranks every match they were in, and regenerates affected match summaries in sequence.\n\nThis cannot be undone.`
+    );
+    if (!ok) return;
+    setDeletingPlayerId(playerId);
+    try {
+      const res = await fetch(`/api/players/${playerId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        alert(
+          `Deleted "${playerName}". Re-ranked ${data.affectedMatches} match(es). Regenerated ${data.summariesRegenerated} summary/summaries.`
+        );
+        await fetchPlayers();
+        await fetchMatches();
+        // If the currently selected match was affected, refresh it
+        if (selectedMatch) {
+          const matchesRes = await fetch('/api/matches');
+          const allMatches = await matchesRes.json();
+          const updated = allMatches.find((m: any) => m.id === selectedMatch.id);
+          if (updated) setSelectedMatch(updated);
+        }
+      } else {
+        alert('Failed to delete: ' + (data.error || 'unknown error'));
+      }
+    } catch (err: any) {
+      alert('Network error: ' + err.message);
+    } finally {
+      setDeletingPlayerId(null);
+    }
+  };
+
   const addResultRow = () => {
     const nextRank = bulkResults.length + 1;
     setBulkResults([...bulkResults, { rank: nextRank, playerId: '', dream11Points: '' }]);
@@ -306,6 +339,7 @@ export default function AdminPage() {
       
       <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
         <button className="btn btn-secondary" onClick={() => setActiveModal('player')}>Add Player Component</button>
+        <button className="btn btn-secondary" onClick={() => setActiveModal('managePlayers')}>Manage Players</button>
         <button className="btn btn-secondary" onClick={() => setActiveModal('match')}>Add Single Match</button>
         <button className="btn btn-secondary" onClick={() => setActiveModal('bulk')}>JSON Upload Matches</button>
         <button className="btn btn-primary" onClick={handleRegenerateAllSummaries} disabled={isRegeneratingAll}>
@@ -473,26 +507,37 @@ export default function AdminPage() {
                       <table>
                         <thead>
                           <tr style={{ background: 'var(--muted)' }}>
-                            <th style={{ width: '60px' }}>Rank</th>
+                            <th style={{ width: '80px' }}>Rank</th>
                             <th>Select Player</th>
                             <th>My11 Score</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {bulkResults.map((row, idx) => (
-                            <tr key={idx}>
-                              <td style={{ fontWeight: 'bold' }}>#{row.rank}</td>
-                              <td>
-                                <select className="input" value={row.playerId} onChange={e => updateResultRow(idx, 'playerId', e.target.value)}>
-                                  <option value="">-- Choose --</option>
-                                  {players.map((p: any) => <option key={p.id} value={p.id}>{p.name} ({p.team})</option>)}
-                                </select>
-                              </td>
-                              <td>
-                                <input type="number" step="any" className="input" placeholder="Points" value={row.dream11Points} onChange={e => updateResultRow(idx, 'dream11Points', e.target.value)} />
-                              </td>
-                            </tr>
-                          ))}
+                          {bulkResults.map((row, idx) => {
+                            const selectedElsewhere = new Set(
+                              bulkResults
+                                .filter((_, i) => i !== idx)
+                                .map(r => r.playerId)
+                                .filter(Boolean)
+                            );
+                            const availablePlayers = players.filter((p: any) => !selectedElsewhere.has(p.id));
+                            return (
+                              <tr key={idx}>
+                                <td style={{ width: '80px' }}>
+                                  <input type="number" min="1" step="1" className="input" style={{ fontWeight: 'bold', textAlign: 'center' }} value={row.rank} onChange={e => updateResultRow(idx, 'rank', e.target.value)} />
+                                </td>
+                                <td>
+                                  <select className="input" value={row.playerId} onChange={e => updateResultRow(idx, 'playerId', e.target.value)}>
+                                    <option value="">-- Choose --</option>
+                                    {availablePlayers.map((p: any) => <option key={p.id} value={p.id}>{p.name} ({p.team})</option>)}
+                                  </select>
+                                </td>
+                                <td>
+                                  <input type="number" step="any" className="input" placeholder="Points" value={row.dream11Points} onChange={e => updateResultRow(idx, 'dream11Points', e.target.value)} />
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
@@ -552,6 +597,47 @@ export default function AdminPage() {
             </div>
             <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Create Match</button>
           </form>
+        </Modal>
+      )}
+
+      {activeModal === 'managePlayers' && (
+        <Modal title="Manage Players" onClose={() => setActiveModal(null)}>
+          <p style={{ fontSize: '0.85rem', color: 'var(--muted-foreground)', marginBottom: '1rem' }}>
+            Deleting a player removes all their match results, re-ranks every match they were in, and regenerates affected summaries sequentially.
+          </p>
+          {players.length === 0 ? (
+            <p className="card-description">No players yet.</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '400px', overflowY: 'auto' }}>
+              {players.map((p: any) => (
+                <div
+                  key={p.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.6rem 0.8rem',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius)',
+                    background: 'var(--muted)'
+                  }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{p.name}</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>{p.team}</span>
+                  </div>
+                  <button
+                    className="btn btn-ghost"
+                    style={{ color: '#e11d48', fontSize: '0.8rem', padding: '0.3rem 0.6rem' }}
+                    disabled={deletingPlayerId === p.id}
+                    onClick={() => handleDeletePlayer(p.id, p.name)}
+                  >
+                    {deletingPlayerId === p.id ? 'Deleting...' : '🗑 Delete'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </Modal>
       )}
 

@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { TEAMS } from '@/lib/constants';
 import PlayerProfile from './components/PlayerProfile';
+import Gravestone from './components/Gravestone';
 import Link from 'next/link';
 
 // Extract player title from AI summary text
@@ -272,6 +273,9 @@ export default function LeaderboardPage() {
         </div>
 
       </div>
+
+      {/* === MEMORIAL — in place of footer === */}
+      <Gravestone name="LIKITH" />
 
       {/* PLAYER PROFILE MODAL */}
       {selectedPlayer && (

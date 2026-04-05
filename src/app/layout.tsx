@@ -12,6 +12,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=UnifrakturMaguntia&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body>
         <nav style={{ padding: '1rem 2rem', background: 'var(--panel-bg)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ color: 'var(--neon-blue)', margin: 0, fontSize: '1.5rem', fontFamily: 'Outfit, sans-serif' }}>
