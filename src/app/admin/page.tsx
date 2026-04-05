@@ -26,6 +26,9 @@ export default function AdminPage() {
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isRegeneratingAll, setIsRegeneratingAll] = useState(false);
   const [regenAllStatus, setRegenAllStatus] = useState('');
+  const [inputMode, setInputMode] = useState<'grid' | 'json'>('grid');
+  const [jsonInput, setJsonInput] = useState('');
+  const [jsonError, setJsonError] = useState('');
   
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -64,14 +67,23 @@ export default function AdminPage() {
     return team?.logo || 'https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png';
   };
 
-  const completedMatches = matches.filter(m => m.results && m.results.length > 0).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const completedMatches = matches
+    .filter(m => m.results && m.results.length > 0)
+    .sort((a, b) => {
+      const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (dateDiff !== 0) return dateDiff;
+      return Number(b.id) - Number(a.id);
+    });
   const upcomingMatches = matches.filter(m => !m.results || m.results.length === 0);
 
   const getPlayerName = (id: string) => players.find(p => p.id === id)?.name || 'Unknown';
 
   const handleSelectMatch = (m: any) => {
     setSelectedMatch(m);
-    
+    setInputMode('grid');
+    setJsonInput('');
+    setJsonError('');
+
     // If it's completed, display the current results (not editing by default)
     if (m.results && m.results.length > 0) {
       setIsEditing(false);
@@ -153,11 +165,75 @@ export default function AdminPage() {
     }
   };
 
+  // Convert bulkResults grid to human-friendly JSON (by player name)
+  const gridToJson = (grid: typeof bulkResults) => {
+    const rows = grid
+      .filter(r => r.playerId || r.dream11Points !== '')
+      .map(r => {
+        const p = players.find((pl: any) => pl.id === r.playerId);
+        return { rank: Number(r.rank), name: p?.name || '', my11: r.dream11Points === '' ? 0 : Number(r.dream11Points) };
+      });
+    return JSON.stringify(rows, null, 2);
+  };
+
+  // Parse JSON back into grid rows; returns { rows, error }
+  const jsonToGrid = (text: string): { rows: typeof bulkResults; error: string } => {
+    try {
+      const parsed = JSON.parse(text);
+      if (!Array.isArray(parsed)) return { rows: [], error: 'JSON must be an array' };
+      const unknownNames: string[] = [];
+      const rows = parsed.map((item: any, idx: number) => {
+        const name = (item.name || '').trim();
+        const player = players.find((p: any) => p.name.toLowerCase() === name.toLowerCase());
+        if (name && !player) unknownNames.push(name);
+        return {
+          rank: Number(item.rank ?? idx + 1),
+          playerId: player?.id || '',
+          dream11Points: item.my11 !== undefined ? String(item.my11) : (item.dream11Points !== undefined ? String(item.dream11Points) : '')
+        };
+      });
+      if (unknownNames.length > 0) {
+        return { rows, error: `Unknown player name(s): ${unknownNames.join(', ')}` };
+      }
+      return { rows, error: '' };
+    } catch (err: any) {
+      return { rows: [], error: 'Invalid JSON: ' + err.message };
+    }
+  };
+
+  const switchToJsonMode = () => {
+    setJsonInput(gridToJson(bulkResults));
+    setJsonError('');
+    setInputMode('json');
+  };
+
+  const switchToGridMode = () => {
+    const { rows, error } = jsonToGrid(jsonInput);
+    if (error && !rows.length) {
+      setJsonError(error);
+      return;
+    }
+    if (rows.length > 0) setBulkResults(rows);
+    setJsonError(error); // surface warnings even if we applied
+    setInputMode('grid');
+  };
+
   const handleBulkResultSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedMatch) return;
 
-    const validResults = bulkResults
+    // If in JSON mode, parse first
+    let sourceRows = bulkResults;
+    if (inputMode === 'json') {
+      const { rows, error } = jsonToGrid(jsonInput);
+      if (error) {
+        setJsonError(error);
+        return;
+      }
+      sourceRows = rows;
+    }
+
+    const validResults = sourceRows
       .filter(r => r.playerId && r.dream11Points !== '')
       .map(r => ({
         matchId: selectedMatch.id,
@@ -337,13 +413,13 @@ export default function AdminPage() {
   return (
     <div className="container animate-fade" style={{ paddingTop: '1rem' }}>
       
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-        <button className="btn btn-secondary" onClick={() => setActiveModal('player')}>Add Player Component</button>
+      <div className="admin-action-bar" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        <button className="btn btn-secondary" onClick={() => setActiveModal('player')}>Add Player</button>
         <button className="btn btn-secondary" onClick={() => setActiveModal('managePlayers')}>Manage Players</button>
-        <button className="btn btn-secondary" onClick={() => setActiveModal('match')}>Add Single Match</button>
-        <button className="btn btn-secondary" onClick={() => setActiveModal('bulk')}>JSON Upload Matches</button>
+        <button className="btn btn-secondary" onClick={() => setActiveModal('match')}>Add Match</button>
+        <button className="btn btn-secondary" onClick={() => setActiveModal('bulk')}>JSON Upload</button>
         <button className="btn btn-primary" onClick={handleRegenerateAllSummaries} disabled={isRegeneratingAll}>
-          {isRegeneratingAll ? '⏳ Regenerating All...' : '✨ Regenerate All Summaries'}
+          {isRegeneratingAll ? '⏳ Regenerating...' : '✨ Regenerate All Summaries'}
         </button>
       </div>
       {regenAllStatus && (
@@ -503,6 +579,45 @@ export default function AdminPage() {
                 {/* Editing Mode */}
                 {isEditing && (
                   <form onSubmit={handleBulkResultSubmit} style={{ padding: '1.5rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                      <button
+                        type="button"
+                        className={`btn ${inputMode === 'grid' ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ flex: 1 }}
+                        onClick={() => inputMode === 'json' && switchToGridMode()}
+                      >
+                        📋 Grid
+                      </button>
+                      <button
+                        type="button"
+                        className={`btn ${inputMode === 'json' ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ flex: 1 }}
+                        onClick={() => inputMode === 'grid' && switchToJsonMode()}
+                      >
+                        {'{ }'} JSON
+                      </button>
+                    </div>
+
+                    {inputMode === 'json' && (
+                      <div style={{ marginBottom: '1rem' }}>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>
+                          Format: <code>[{'{'}"rank": 1, "name": "Donga", "my11": 905.5{'}'}]</code> — names are case-insensitive.
+                        </p>
+                        <textarea
+                          className="input"
+                          rows={12}
+                          value={jsonInput}
+                          onChange={e => { setJsonInput(e.target.value); setJsonError(''); }}
+                          style={{ fontFamily: 'monospace', height: 'auto', minHeight: '260px', paddingTop: '0.5rem', fontSize: '0.85rem' }}
+                          placeholder='[\n  {"rank": 1, "name": "Donga", "my11": 905.5},\n  {"rank": 2, "name": "Umesh", "my11": 842}\n]'
+                        />
+                        {jsonError && (
+                          <p style={{ color: '#f87171', fontSize: '0.8rem', marginTop: '0.5rem' }}>⚠ {jsonError}</p>
+                        )}
+                      </div>
+                    )}
+
+                    {inputMode === 'grid' && (
                     <div className="table-wrapper" style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', marginBottom: '1.5rem' }}>
                       <table>
                         <thead>
@@ -541,8 +656,13 @@ export default function AdminPage() {
                         </tbody>
                       </table>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <button type="button" className="btn btn-ghost" onClick={addResultRow}>+ Add Row</button>
+                    )}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      {inputMode === 'grid' ? (
+                        <button type="button" className="btn btn-ghost" onClick={addResultRow}>+ Add Row</button>
+                      ) : (
+                        <span style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>{selectedMatch ? `Match ${selectedMatch.id}` : ''}</span>
+                      )}
                       <button type="submit" className="btn btn-primary">Save Results ✅</button>
                     </div>
                   </form>

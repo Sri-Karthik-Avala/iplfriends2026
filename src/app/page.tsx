@@ -64,7 +64,14 @@ export default function LeaderboardPage() {
     return team?.logo || 'https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png';
   };
 
-  const completedMatches = matches.filter(m => m.results && m.results.length > 0).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const completedMatches = matches
+    .filter(m => m.results && m.results.length > 0)
+    .sort((a, b) => {
+      const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (dateDiff !== 0) return dateDiff;
+      // Same date → newer match number first (so M11 beats M10)
+      return Number(b.id) - Number(a.id);
+    });
   const upcomingMatches = matches.filter(m => !m.results || m.results.length === 0);
 
   const visibleCompleted = showAllCompleted ? completedMatches : completedMatches.slice(0, 5);

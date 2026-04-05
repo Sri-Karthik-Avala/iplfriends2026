@@ -31,6 +31,9 @@ export default function RootLayout({
           </div>
         </nav>
         <main>{children}</main>
+        <div className="boundary-shot" aria-hidden="true">
+          <div className="ball" />
+        </div>
       </body>
     </html>
   );

@@ -700,6 +700,185 @@ select.input option {
   to { opacity: 1; }
 }
 
+/* === CRICKET ANIMATIONS === */
+
+/* The cricket ball visual: red leather with curved white seams */
+.cricket-ball {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 30%, #ff7878 0%, #c42424 45%, #5a0a0a 100%);
+  box-shadow:
+    inset -2px -2px 4px rgba(0, 0, 0, 0.5),
+    inset 2px 2px 3px rgba(255, 255, 255, 0.25),
+    0 0 4px rgba(196, 36, 36, 0.4);
+  position: relative;
+  overflow: hidden;
+  vertical-align: middle;
+}
+.cricket-ball::before,
+.cricket-ball::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -10%;
+  width: 2px;
+  height: 130%;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.95) 0,
+    rgba(255, 255, 255, 0.95) 1.5px,
+    transparent 1.5px,
+    transparent 3px
+  );
+  transform-origin: center center;
+  transform: translateX(-50%) rotate(70deg);
+  border-radius: 50%;
+}
+.cricket-ball::after {
+  transform: translateX(-50%) rotate(110deg);
+}
+
+/* Spinning ball next to section headers */
+.section-header h2::before,
+.card-title::before {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 0.55rem;
+  border-radius: 50%;
+  background:
+    linear-gradient(90deg, transparent 46%, rgba(255, 255, 255, 0.9) 46.5%, rgba(255, 255, 255, 0.9) 53.5%, transparent 54%),
+    radial-gradient(circle at 32% 30%, #ff7878 0%, #c42424 45%, #5a0a0a 100%);
+  box-shadow:
+    inset -1.5px -1.5px 3px rgba(0, 0, 0, 0.5),
+    inset 1.5px 1.5px 2px rgba(255, 255, 255, 0.2),
+    0 0 4px rgba(196, 36, 36, 0.3);
+  vertical-align: middle;
+  animation: ballSpin 3s linear infinite;
+  transform-origin: center center;
+  flex-shrink: 0;
+}
+@keyframes ballSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Boundary shot: ball arcs diagonally across the top, leaves a trail */
+.boundary-shot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 180px;
+  pointer-events: none;
+  z-index: 49;
+  overflow: hidden;
+}
+.boundary-shot .ball {
+  position: absolute;
+  top: 70%;
+  left: -40px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background:
+    linear-gradient(90deg, transparent 46%, rgba(255, 255, 255, 0.9) 46.5%, rgba(255, 255, 255, 0.9) 53.5%, transparent 54%),
+    radial-gradient(circle at 32% 30%, #ff7878 0%, #c42424 45%, #5a0a0a 100%);
+  box-shadow:
+    inset -2px -2px 5px rgba(0, 0, 0, 0.5),
+    inset 2px 2px 3px rgba(255, 255, 255, 0.25),
+    0 0 12px 2px rgba(255, 80, 80, 0.6),
+    0 0 24px 6px rgba(255, 80, 80, 0.2);
+  animation: boundaryArc 25s ease-in infinite;
+  animation-delay: 5s;
+  opacity: 0;
+}
+.boundary-shot .ball::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  width: 80px;
+  height: 2px;
+  background: linear-gradient(to left, rgba(255, 120, 120, 0.7), transparent);
+  filter: blur(1px);
+  transform: translateY(-50%);
+}
+@keyframes boundaryArc {
+  0% {
+    left: -40px;
+    top: 75%;
+    transform: rotate(0deg) scale(1);
+    opacity: 0;
+  }
+  2% { opacity: 1; }
+  50% {
+    left: 50%;
+    top: 15%;
+    transform: rotate(720deg) scale(1);
+    opacity: 1;
+  }
+  96% { opacity: 1; }
+  100% {
+    left: 110%;
+    top: 75%;
+    transform: rotate(1440deg) scale(0.9);
+    opacity: 0;
+  }
+}
+
+/* Top rank: pulsing gold glow (only the first-place card) */
+.player-card.rank-1 {
+  position: relative;
+  animation: goldPulse 2.8s ease-in-out infinite;
+}
+@keyframes goldPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 215, 0, 0);
+    border-left-color: #d4af37;
+  }
+  50% {
+    box-shadow: 0 0 24px -4px rgba(255, 215, 0, 0.45), inset 0 0 0 1px rgba(255, 215, 0, 0.2);
+    border-left-color: gold;
+  }
+}
+
+/* Silver #2 subtle shimmer */
+.player-card.rank-2 {
+  animation: silverPulse 3.4s ease-in-out infinite;
+  animation-delay: 0.4s;
+}
+@keyframes silverPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(192, 192, 192, 0); }
+  50% { box-shadow: 0 0 16px -6px rgba(192, 192, 192, 0.35); }
+}
+
+/* Bronze #3 subtle shimmer */
+.player-card.rank-3 {
+  animation: bronzePulse 3.8s ease-in-out infinite;
+  animation-delay: 0.8s;
+}
+@keyframes bronzePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(205, 127, 50, 0); }
+  50% { box-shadow: 0 0 14px -6px rgba(205, 127, 50, 0.3); }
+}
+
+/* Respect user motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .boundary-shot .ball,
+  .section-header h2::before,
+  .card-title::before,
+  .player-card.rank-1,
+  .player-card.rank-2,
+  .player-card.rank-3 {
+    animation: none !important;
+  }
+}
+
 @media (max-width: 1024px) {
   .split-layout {
     grid-template-columns: 1fr;
@@ -731,24 +910,44 @@ select.input option {
   .nav-link {
     font-size: 0.8rem;
   }
-  
+
   /* Compact Tables for Mobile */
   th {
     padding: 0 0.5rem;
     font-size: 0.75rem;
   }
   td {
-    padding: 0.75rem 0.5rem;
+    padding: 0.5rem 0.4rem;
     font-size: 0.8rem;
   }
-  .table-wrapper table {
-    white-space: nowrap;
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
-  
+
+  /* Match cards: compact on mobile */
+  .match-card {
+    padding: 0.7rem 0.75rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .match-card .team-logo {
+    width: 28px !important;
+    height: 28px !important;
+  }
+  .match-logos {
+    gap: 0.3rem;
+  }
+  .vs-badge {
+    font-size: 0.6rem;
+  }
+
   /* Stacked Modal Overlays */
   .modal-content {
     padding: 1rem;
-    margin: 1rem;
+    margin: 0;
+    max-height: 90vh;
+    overflow-y: auto;
   }
   .profile-split {
     flex-direction: column;
@@ -759,5 +958,47 @@ select.input option {
   }
   .profile-modal-inner h1 {
     font-size: 2rem !important;
+  }
+
+  /* Forms: inputs need more touch-friendly height */
+  .input {
+    height: 2.75rem;
+    font-size: 0.9rem;
+  }
+  .btn {
+    height: 2.75rem;
+    font-size: 0.85rem;
+    padding: 0 0.75rem;
+  }
+}
+
+/* Admin action bar: stack cleanly on small screens */
+@media (max-width: 768px) {
+  .admin-action-bar {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem !important;
+  }
+  .admin-action-bar .btn {
+    width: 100%;
+    font-size: 0.78rem;
+    padding: 0 0.5rem;
+  }
+  .admin-action-bar .btn-primary {
+    grid-column: span 2;
+  }
+}
+
+/* Nav: mobile friendly */
+@media (max-width: 480px) {
+  nav {
+    padding: 0.75rem 1rem !important;
+  }
+  nav h2 {
+    font-size: 1.1rem !important;
+  }
+  nav a {
+    margin-right: 0.75rem !important;
+    font-size: 0.85rem;
   }
 }
