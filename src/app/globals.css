@@ -220,10 +220,10 @@ body {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  object-fit: contain;
+  object-fit: cover;
   background: white;
-  padding: 2px;
-  border: 1px solid var(--border);
+  padding: 0;
+  border: 2px solid var(--border);
   flex-shrink: 0;
 }
 
@@ -954,10 +954,15 @@ select.input option {
   }
   .profile-split > div {
     flex: 1 1 100% !important;
-    padding: 1.5rem !important;
+    padding: 1.25rem !important;
+  }
+  .profile-modal-inner {
+    border-radius: 16px !important;
+    margin-top: 0.5rem !important;
+    margin-bottom: 1rem !important;
   }
   .profile-modal-inner h1 {
-    font-size: 2rem !important;
+    font-size: 1.8rem !important;
   }
 
   /* Forms: inputs need more touch-friendly height */

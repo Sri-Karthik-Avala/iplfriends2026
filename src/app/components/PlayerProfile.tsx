@@ -40,24 +40,28 @@ export default function PlayerProfile({ playerData, matches, overallRank, totalL
       top: 0, left: 0, right: 0, bottom: 0,
       backgroundColor: 'rgba(0,0,0,0.85)',
       display: 'flex',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       justifyContent: 'center',
       zIndex: 1000,
       backdropFilter: 'blur(5px)',
       animation: 'fadeIn 0.2s ease',
-      padding: '1rem'
-    }}>
+      padding: '1rem',
+      overflowY: 'auto',
+      WebkitOverflowScrolling: 'touch'
+    }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div style={{
         position: 'relative',
         width: '100%',
         maxWidth: '850px',
         backgroundColor: 'var(--card)',
         borderRadius: '24px',
-        overflow: 'hidden',
+        overflow: 'visible',
         display: 'flex',
         flexDirection: 'column',
         boxShadow: `0 0 40px ${playerData.teamColor}50, inset 0 0 20px rgba(255,255,255,0.05)`,
-        border: `1px solid ${playerData.teamColor}80`
+        border: `1px solid ${playerData.teamColor}80`,
+        margin: 'auto 0',
+        flexShrink: 0
       }} className="profile-modal-inner">
         
         <button onClick={onClose} style={{
