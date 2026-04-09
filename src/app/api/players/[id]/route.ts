@@ -27,6 +27,35 @@ function denseRank(results: { dream11_points: number }[]): number[] {
 const calcLeaguePoints = (rank: number, totalParticipants: number) =>
   Math.max(totalParticipants - rank + 1, 0);
 
+export async function PUT(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const playerId = params.id;
+    if (!playerId) {
+      return NextResponse.json({ error: 'Player id required' }, { status: 400 });
+    }
+    const body = await req.json();
+    const updates: Record<string, any> = {};
+    if (body.name !== undefined) updates.name = body.name;
+    if (body.team !== undefined) updates.team = body.team;
+    if (body.teamColor !== undefined) updates.team_color = body.teamColor;
+    if (body.imageUrl !== undefined) updates.image_url = body.imageUrl;
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
+    }
+
+    const { error } = await supabase.from('players').update(updates).eq('id', playerId);
+    if (error) throw error;
+
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
 export async function DELETE(
   _req: Request,
   { params }: { params: { id: string } }

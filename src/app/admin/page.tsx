@@ -8,8 +8,12 @@ export default function AdminPage() {
   const [matches, setMatches] = useState<any[]>([]);
   
   // Modals State
-  const [activeModal, setActiveModal] = useState<'player' | 'match' | 'bulk' | 'managePlayers' | null>(null);
+  const [activeModal, setActiveModal] = useState<'match' | 'bulk' | 'managePlayers' | null>(null);
   const [deletingPlayerId, setDeletingPlayerId] = useState<string | null>(null);
+  const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', team: '', teamColor: '#27272a', imageUrl: '' });
+  const [editFile, setEditFile] = useState<File | null>(null);
+  const [savingPlayerId, setSavingPlayerId] = useState<string | null>(null);
 
   // Form State
   const [newPlayer, setNewPlayer] = useState({ name: '', team: '', teamColor: '#27272a', imageUrl: '' });
@@ -311,6 +315,46 @@ export default function AdminPage() {
     }
   };
 
+  const startEditPlayer = (p: any) => {
+    setEditingPlayerId(p.id);
+    setEditForm({ name: p.name, team: p.team, teamColor: p.team_color || '#27272a', imageUrl: p.image_url || '' });
+    setEditFile(null);
+  };
+
+  const handleSavePlayer = async (playerId: string) => {
+    setSavingPlayerId(playerId);
+    try {
+      let finalImageUrl = editForm.imageUrl;
+      if (editFile) {
+        const formData = new FormData();
+        formData.append('file', editFile);
+        const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+        const uploadData = await uploadRes.json();
+        if (uploadData.success) {
+          finalImageUrl = uploadData.imageUrl;
+        } else {
+          alert('Image upload failed.'); return;
+        }
+      }
+      const res = await fetch(`/api/players/${playerId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...editForm, imageUrl: finalImageUrl })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEditingPlayerId(null);
+        await fetchPlayers();
+      } else {
+        alert('Failed: ' + data.error);
+      }
+    } catch (err: any) {
+      alert('Error: ' + err.message);
+    } finally {
+      setSavingPlayerId(null);
+    }
+  };
+
   const handleDeletePlayer = async (playerId: string, playerName: string) => {
     const ok = confirm(
       `Delete "${playerName}"?\n\nThis removes the player, all their match results, re-ranks every match they were in, and regenerates affected match summaries in sequence.\n\nThis cannot be undone.`
@@ -414,7 +458,6 @@ export default function AdminPage() {
     <div className="container animate-fade" style={{ paddingTop: '1rem' }}>
       
       <div className="admin-action-bar" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-        <button className="btn btn-secondary" onClick={() => setActiveModal('player')}>Add Player</button>
         <button className="btn btn-secondary" onClick={() => setActiveModal('managePlayers')}>Manage Players</button>
         <button className="btn btn-secondary" onClick={() => setActiveModal('match')}>Add Match</button>
         <button className="btn btn-secondary" onClick={() => setActiveModal('bulk')}>JSON Upload</button>
@@ -675,35 +718,6 @@ export default function AdminPage() {
 
       </div>
 
-      {/* Modals from before */}
-      {activeModal === 'player' && (
-        <Modal title="Add New Player" onClose={() => setActiveModal(null)}>
-          <form onSubmit={handleCreatePlayer}>
-            <div className="form-group">
-              <label className="label">Name</label>
-              <input className="input" value={newPlayer.name} onChange={e => setNewPlayer({...newPlayer, name: e.target.value})} required />
-            </div>
-            <div className="form-group">
-              <label className="label">Team Name</label>
-              <input className="input" value={newPlayer.team} onChange={e => setNewPlayer({...newPlayer, team: e.target.value})} required />
-            </div>
-            <div className="form-group">
-              <label className="label">Team Color (Hex)</label>
-              <input type="color" className="input" style={{ padding: '0.2rem' }} value={newPlayer.teamColor} onChange={e => setNewPlayer({...newPlayer, teamColor: e.target.value})} />
-            </div>
-            <div className="form-group">
-              <label className="label">Upload Profile Image</label>
-              <input type="file" className="input" accept="image/*" onChange={e => setPlayerFile(e.target.files?.[0] || null)} />
-            </div>
-            <div className="form-group">
-              <label className="label" style={{ fontSize: '0.85rem' }}>OR Provide Image URL</label>
-              <input className="input" value={newPlayer.imageUrl} onChange={e => setNewPlayer({...newPlayer, imageUrl: e.target.value})} placeholder="https://..." />
-            </div>
-            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Create Player</button>
-          </form>
-        </Modal>
-      )}
-
       {activeModal === 'match' && (
         <Modal title="Schedule Single Match" onClose={() => setActiveModal(null)}>
           <form onSubmit={handleCreateMatch}>
@@ -721,43 +735,88 @@ export default function AdminPage() {
       )}
 
       {activeModal === 'managePlayers' && (
-        <Modal title="Manage Players" onClose={() => setActiveModal(null)}>
-          <p style={{ fontSize: '0.85rem', color: 'var(--muted-foreground)', marginBottom: '1rem' }}>
-            Deleting a player removes all their match results, re-ranks every match they were in, and regenerates affected summaries sequentially.
-          </p>
-          {players.length === 0 ? (
-            <p className="card-description">No players yet.</p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '400px', overflowY: 'auto' }}>
-              {players.map((p: any) => (
-                <div
-                  key={p.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '0.6rem 0.8rem',
-                    border: '1px solid var(--border)',
-                    borderRadius: 'var(--radius)',
-                    background: 'var(--muted)'
-                  }}
-                >
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{p.name}</span>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>{p.team}</span>
+        <Modal title="Manage Players" onClose={() => { setActiveModal(null); setEditingPlayerId(null); }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '60vh', overflowY: 'auto', marginBottom: '1rem' }}>
+            {players.map((p: any) => (
+              <div key={p.id} style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--muted)', overflow: 'hidden' }}>
+                {editingPlayerId === p.id ? (
+                  /* Edit Mode */
+                  <div style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <input className="input" placeholder="Name" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} style={{ flex: 1 }} />
+                      <input type="color" className="input" value={editForm.teamColor} onChange={e => setEditForm({...editForm, teamColor: e.target.value})} style={{ width: '50px', padding: '0.2rem', flex: 'none' }} />
+                    </div>
+                    <input className="input" placeholder="Team Name" value={editForm.team} onChange={e => setEditForm({...editForm, team: e.target.value})} />
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      {editForm.imageUrl && (
+                        <img src={editForm.imageUrl} alt="" style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border)', flexShrink: 0 }} />
+                      )}
+                      <input type="file" className="input" accept="image/*" onChange={e => setEditFile(e.target.files?.[0] || null)} style={{ flex: 1, fontSize: '0.8rem' }} />
+                    </div>
+                    <input className="input" placeholder="Image URL (optional)" value={editForm.imageUrl} onChange={e => setEditForm({...editForm, imageUrl: e.target.value})} style={{ fontSize: '0.8rem' }} />
+                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                      <button className="btn btn-ghost" style={{ fontSize: '0.8rem' }} onClick={() => setEditingPlayerId(null)}>Cancel</button>
+                      <button className="btn btn-primary" style={{ fontSize: '0.8rem' }} disabled={savingPlayerId === p.id} onClick={() => handleSavePlayer(p.id)}>
+                        {savingPlayerId === p.id ? 'Saving...' : 'Save'}
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    className="btn btn-ghost"
-                    style={{ color: '#e11d48', fontSize: '0.8rem', padding: '0.3rem 0.6rem' }}
-                    disabled={deletingPlayerId === p.id}
-                    onClick={() => handleDeletePlayer(p.id, p.name)}
-                  >
-                    {deletingPlayerId === p.id ? 'Deleting...' : '🗑 Delete'}
-                  </button>
+                ) : (
+                  /* View Mode */
+                  <div style={{ display: 'flex', alignItems: 'center', padding: '0.6rem 0.8rem', gap: '0.6rem' }}>
+                    <img src={p.image_url || 'https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png'} alt={p.name} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', border: `2px solid ${p.team_color || 'var(--border)'}`, flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>{p.name}</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: p.team_color || '#555', display: 'inline-block' }} />
+                        {p.team}
+                      </div>
+                    </div>
+                    <button className="btn btn-ghost" style={{ fontSize: '0.78rem', padding: '0.3rem 0.5rem' }} onClick={() => startEditPlayer(p)}>Edit</button>
+                    <button
+                      className="btn btn-ghost"
+                      style={{ color: '#e11d48', fontSize: '0.78rem', padding: '0.3rem 0.5rem' }}
+                      disabled={deletingPlayerId === p.id}
+                      onClick={() => handleDeletePlayer(p.id, p.name)}
+                    >
+                      {deletingPlayerId === p.id ? '...' : 'Delete'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          {/* Add New Player */}
+          <details style={{ borderTop: '1px solid var(--border)', paddingTop: '0.75rem' }}>
+            <summary style={{ cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, color: 'var(--foreground)', marginBottom: '0.75rem' }}>
+              + Add New Player
+            </summary>
+            <form onSubmit={handleCreatePlayer}>
+              <div className="form-group">
+                <label className="label">Name</label>
+                <input className="input" value={newPlayer.name} onChange={e => setNewPlayer({...newPlayer, name: e.target.value})} required />
+              </div>
+              <div className="form-group">
+                <label className="label">Team Name</label>
+                <input className="input" value={newPlayer.team} onChange={e => setNewPlayer({...newPlayer, team: e.target.value})} required />
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }} className="form-group">
+                <div style={{ flex: 1 }}>
+                  <label className="label">Team Color</label>
+                  <input type="color" className="input" style={{ padding: '0.2rem' }} value={newPlayer.teamColor} onChange={e => setNewPlayer({...newPlayer, teamColor: e.target.value})} />
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+              <div className="form-group">
+                <label className="label">Profile Image</label>
+                <input type="file" className="input" accept="image/*" onChange={e => setPlayerFile(e.target.files?.[0] || null)} />
+              </div>
+              <div className="form-group">
+                <label className="label" style={{ fontSize: '0.85rem' }}>OR Image URL</label>
+                <input className="input" value={newPlayer.imageUrl} onChange={e => setNewPlayer({...newPlayer, imageUrl: e.target.value})} placeholder="https://..." />
+              </div>
+              <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Create Player</button>
+            </form>
+          </details>
         </Modal>
       )}
 
