@@ -27,6 +27,31 @@ function denseRank(results: { dream11_points: number }[]): number[] {
 const calcLeaguePoints = (rank: number, totalParticipants: number) =>
   Math.max(totalParticipants - rank + 1, 0);
 
+export async function GET(
+  _req: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const idOrSlug = params.id;
+    // Try UUID first, then name-based slug lookup
+    let player = null;
+    const { data: byId } = await supabase.from('players').select('*').eq('id', idOrSlug).single();
+    if (byId) {
+      player = byId;
+    } else {
+      // Slug lookup: match name case-insensitively
+      const { data: all } = await supabase.from('players').select('*');
+      player = all?.find(p => p.name.toLowerCase() === idOrSlug.toLowerCase()) || null;
+    }
+    if (!player) {
+      return NextResponse.json({ error: 'Player not found' }, { status: 404 });
+    }
+    return NextResponse.json(player);
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
 export async function PUT(
   req: Request,
   { params }: { params: { id: string } }

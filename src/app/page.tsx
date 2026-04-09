@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { TEAMS } from '@/lib/constants';
-import PlayerProfile from './components/PlayerProfile';
 import Gravestone from './components/Gravestone';
 import Link from 'next/link';
 
@@ -34,9 +33,6 @@ export default function LeaderboardPage() {
   // Expand state
   const [showAllCompleted, setShowAllCompleted] = useState(false);
   const [showAllUpcoming, setShowAllUpcoming] = useState(false);
-
-  // Player profile modal
-  const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
 
   useEffect(() => {
     fetchData();
@@ -131,10 +127,13 @@ export default function LeaderboardPage() {
             const rank = getRankDisplay(idx);
             const playerTitle = latestSummary ? extractPlayerTitle(latestSummary, lb.player.name) : null;
             return (
-              <div
+              <Link
                 key={lb.player.id}
+                href={`/profile/${lb.player.name.toLowerCase()}`}
+                style={{ textDecoration: 'none', color: 'inherit' }}
+              >
+              <div
                 className={`player-card ${rank.className}`}
-                onClick={() => setSelectedPlayer({ playerData: lb.player, rank: idx + 1, leaguePoints: lb._sum.leaguePoints })}
               >
                 <div className={`player-rank ${rank.emoji ? '' : 'numeric'}`}>
                   {rank.emoji || `#${idx + 1}`}
@@ -153,6 +152,7 @@ export default function LeaderboardPage() {
                   <div className="points-label">rank pts</div>
                 </div>
               </div>
+              </Link>
             );
           })}
         </div>
@@ -284,20 +284,6 @@ export default function LeaderboardPage() {
       {/* === MEMORIAL — in place of footer === */}
       <Gravestone name="LIKITH" />
 
-      {/* PLAYER PROFILE MODAL */}
-      {selectedPlayer && (
-        <PlayerProfile
-          playerData={selectedPlayer.playerData}
-          overallRank={selectedPlayer.rank}
-          totalLeaguePoints={selectedPlayer.leaguePoints}
-          matches={matches}
-          onClose={() => setSelectedPlayer(null)}
-          onMatchClick={(m: any) => {
-            setSelectedPlayer(null);
-            window.location.href = `/match/${m.id}`;
-          }}
-        />
-      )}
     </div>
   );
 }
