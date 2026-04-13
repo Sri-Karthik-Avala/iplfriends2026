@@ -1,4 +1,5 @@
 import './globals.css';
+import Link from 'next/link';
 
 export const metadata = {
   title: 'IPL Friends League',
@@ -22,12 +23,14 @@ export default function RootLayout({
       </head>
       <body>
         <nav style={{ padding: '1rem 2rem', background: 'var(--panel-bg)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ color: 'var(--neon-blue)', margin: 0, fontSize: '1.5rem', fontFamily: 'Outfit, sans-serif' }}>
-            🏆 IPL FRIENDS
-          </h2>
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <h2 style={{ color: 'var(--neon-blue)', margin: 0, fontSize: '1.5rem', fontFamily: 'Outfit, sans-serif', cursor: 'pointer' }}>
+              🏆 IPL FRIENDS
+            </h2>
+          </Link>
           <div>
-            <a href="/" style={{ marginRight: '1.5rem', fontWeight: 600, color: 'var(--text-main)', transition: 'color 0.3s' }}>Leaderboard</a>
-            <a href="/admin" style={{ fontWeight: 600, color: 'var(--text-muted)', transition: 'color 0.3s' }}>Admin Panel</a>
+            <Link href="/" style={{ marginRight: '1.5rem', fontWeight: 600, color: 'var(--text-main)', transition: 'color 0.3s' }}>Leaderboard</Link>
+            <Link href="/admin" style={{ fontWeight: 600, color: 'var(--text-muted)', transition: 'color 0.3s' }}>Admin Panel</Link>
           </div>
         </nav>
         <main>{children}</main>

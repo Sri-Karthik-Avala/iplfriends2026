@@ -75,6 +75,32 @@ export default function MatchDetailPage() {
   const t1 = parts[0]?.trim() || '';
   const t2 = parts[1]?.trim() || '';
 
+  if (match.cancelled) {
+    return (
+      <div className="match-detail-container animate-fade">
+        <Link href="/" className="match-detail-back">← Back to Leaderboard</Link>
+        <div className="match-detail-header">
+          <div className="match-logos" style={{ gap: '0.75rem' }}>
+            <img src={getTeamLogo(t1)} alt={t1} className="team-logo" style={{ width: 48, height: 48, filter: 'grayscale(1)' }} />
+            <span className="vs-badge">VS</span>
+            <img src={getTeamLogo(t2)} alt={t2} className="team-logo" style={{ width: 48, height: 48, filter: 'grayscale(1)' }} />
+          </div>
+          <div>
+            <h2 style={{ fontWeight: 600, letterSpacing: '-0.025em', textDecoration: 'line-through' }}>{match.name}</h2>
+            <p style={{ color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>
+              {new Date(match.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} • Match #{match.id}
+            </p>
+          </div>
+        </div>
+        <div style={{ textAlign: 'center', padding: '3rem 0' }}>
+          <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>❌</span>
+          <h3 style={{ marginBottom: '0.5rem' }}>Match Cancelled</h3>
+          <p style={{ color: 'var(--muted-foreground)' }}>This match was cancelled. No points were awarded.</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!hasResults) {
     return (
       <div className="match-detail-container animate-fade">

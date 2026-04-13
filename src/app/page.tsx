@@ -61,21 +61,21 @@ export default function LeaderboardPage() {
   };
 
   const completedMatches = matches
-    .filter(m => m.results && m.results.length > 0)
+    .filter(m => (m.results && m.results.length > 0) || m.cancelled)
     .sort((a, b) => {
       const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
       if (dateDiff !== 0) return dateDiff;
       // Same date → newer match number first (so M11 beats M10)
       return Number(b.id) - Number(a.id);
     });
-  const upcomingMatches = matches.filter(m => !m.results || m.results.length === 0);
+  const upcomingMatches = matches.filter(m => !m.cancelled && (!m.results || m.results.length === 0));
 
   const visibleCompleted = showAllCompleted ? completedMatches : completedMatches.slice(0, 5);
   const visibleUpcoming = showAllUpcoming ? upcomingMatches : upcomingMatches.slice(0, 5);
 
   // Get latest completed match with a summary
   const latestSummaryMatch = useMemo(() => {
-    return completedMatches.find(m => m.summary);
+    return completedMatches.find(m => m.summary && !m.cancelled);
   }, [completedMatches]);
 
   const latestSummary = latestSummaryMatch?.summary || null;
@@ -205,22 +205,24 @@ export default function LeaderboardPage() {
 
                 return (
                   <Link key={m.id} href={`/match/${m.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                    <div className="match-card" style={{ opacity: 0.9 }}>
+                    <div className="match-card" style={{ opacity: m.cancelled ? 0.6 : 0.9 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '40px' }}>
                           <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--muted-foreground)' }}>M{m.id || '?'}</span>
                         </div>
                         <div className="match-logos">
-                          <img src={getTeamLogo(t1)} alt={t1} className="team-logo" style={{ width: 36, height: 36 }} />
+                          <img src={getTeamLogo(t1)} alt={t1} className="team-logo" style={{ width: 36, height: 36, filter: m.cancelled ? 'grayscale(1)' : undefined }} />
                           <span className="vs-badge" style={{ fontSize: '0.6rem' }}>VS</span>
-                          <img src={getTeamLogo(t2)} alt={t2} className="team-logo" style={{ width: 36, height: 36 }} />
+                          <img src={getTeamLogo(t2)} alt={t2} className="team-logo" style={{ width: 36, height: 36, filter: m.cancelled ? 'grayscale(1)' : undefined }} />
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', marginLeft: '0.5rem' }}>
-                          <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{m.name}</span>
+                          <span style={{ fontSize: '0.9rem', fontWeight: 500, textDecoration: m.cancelled ? 'line-through' : undefined }}>{m.name}</span>
                           <span style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>{new Date(m.date).toLocaleDateString()}</span>
                         </div>
                       </div>
-                      <span className="badge badge-outline">View Results →</span>
+                      {m.cancelled
+                        ? <span className="badge badge-outline" style={{ color: 'var(--muted-foreground)' }}>❌ Cancelled</span>
+                        : <span className="badge badge-outline">View Results →</span>}
                     </div>
                   </Link>
                 );

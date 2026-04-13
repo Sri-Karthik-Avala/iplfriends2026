@@ -39,6 +39,19 @@ export default function AdminPage() {
   const [usernameInput, setUsernameInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
 
+  // Submission Feedback State (loading / success / error modal)
+  const [submitState, setSubmitState] = useState<{ status: 'idle' | 'loading' | 'success' | 'error'; message: string }>({ status: 'idle', message: '' });
+
+  const showLoading = (message: string) => setSubmitState({ status: 'loading', message });
+  const showSuccess = (message: string) => {
+    setSubmitState({ status: 'success', message });
+    setTimeout(() => setSubmitState({ status: 'idle', message: '' }), 1800);
+  };
+  const showError = (message: string) => {
+    setSubmitState({ status: 'error', message });
+    setTimeout(() => setSubmitState({ status: 'idle', message: '' }), 2800);
+  };
+
   useEffect(() => {
     // Session persistence for active browser tabs or Vercel deployments
     if (typeof window !== 'undefined') {
@@ -72,13 +85,13 @@ export default function AdminPage() {
   };
 
   const completedMatches = matches
-    .filter(m => m.results && m.results.length > 0)
+    .filter(m => (m.results && m.results.length > 0) || m.cancelled)
     .sort((a, b) => {
       const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
       if (dateDiff !== 0) return dateDiff;
       return Number(b.id) - Number(a.id);
     });
-  const upcomingMatches = matches.filter(m => !m.results || m.results.length === 0);
+  const upcomingMatches = matches.filter(m => !m.cancelled && (!m.results || m.results.length === 0));
 
   const getPlayerName = (id: string) => players.find(p => p.id === id)?.name || 'Unknown';
 
@@ -107,51 +120,82 @@ export default function AdminPage() {
 
   const handleCreatePlayer = async (e: React.FormEvent) => {
     e.preventDefault();
-    let finalImageUrl = newPlayer.imageUrl;
+    if (submitState.status === 'loading') return;
+    showLoading('Creating player...');
+    try {
+      let finalImageUrl = newPlayer.imageUrl;
 
-    if (playerFile) {
-      const formData = new FormData();
-      formData.append('file', playerFile);
-      const uploadRes = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-      const uploadData = await uploadRes.json();
-      if (uploadData.success) {
-        finalImageUrl = uploadData.imageUrl;
-      } else {
-        alert('Failed to upload image.');
+      if (playerFile) {
+        const formData = new FormData();
+        formData.append('file', playerFile);
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        const uploadData = await uploadRes.json();
+        if (uploadData.success) {
+          finalImageUrl = uploadData.imageUrl;
+        } else {
+          showError('Failed to upload image.');
+          return;
+        }
       }
-    }
 
-    await fetch('/api/players', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...newPlayer, imageUrl: finalImageUrl })
-    });
-    setNewPlayer({ name: '', team: '', teamColor: '#27272a', imageUrl: '' });
-    setPlayerFile(null);
-    fetchPlayers();
-    setActiveModal(null);
+      const res = await fetch('/api/players', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...newPlayer, imageUrl: finalImageUrl })
+      });
+      if (!res.ok) {
+        showError('Failed to create player.');
+        return;
+      }
+      setNewPlayer({ name: '', team: '', teamColor: '#27272a', imageUrl: '' });
+      setPlayerFile(null);
+      await fetchPlayers();
+      setActiveModal(null);
+      showSuccess('Player created!');
+    } catch (err: any) {
+      showError('Error: ' + err.message);
+    }
   };
 
   const handleCreateMatch = async (e: React.FormEvent) => {
     e.preventDefault();
-    await fetch('/api/matches', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newMatch)
-    });
-    setNewMatch({ name: '', date: '' });
-    fetchMatches();
-    setActiveModal(null);
+    if (submitState.status === 'loading') return;
+    showLoading('Creating match...');
+    try {
+      const res = await fetch('/api/matches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newMatch)
+      });
+      if (!res.ok) {
+        showError('Failed to create match.');
+        return;
+      }
+      setNewMatch({ name: '', date: '' });
+      await fetchMatches();
+      setActiveModal(null);
+      showSuccess('Match created!');
+    } catch (err: any) {
+      showError('Error: ' + err.message);
+    }
   };
 
   const handleBulkMatches = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitState.status === 'loading') return;
+    let parsed;
     try {
-      const parsed = JSON.parse(bulkMatchesJson);
+      parsed = JSON.parse(bulkMatchesJson);
       if (!Array.isArray(parsed)) throw new Error('JSON must be array');
+    } catch (err: any) {
+      showError('Invalid JSON: ' + err.message);
+      return;
+    }
+    showLoading('Seeding matches...');
+    try {
       const res = await fetch('/api/matches/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -160,12 +204,14 @@ export default function AdminPage() {
       const data = await res.json();
       if (data.success) {
         setBulkMatchesJson('');
-        fetchMatches();
+        await fetchMatches();
         setActiveModal(null);
-        alert('Seeded!');
+        showSuccess('Seeded!');
+      } else {
+        showError('Failed: ' + (data.error || 'unknown'));
       }
-    } catch(err: any) {
-      alert('Invalid JSON: ' + err.message);
+    } catch (err: any) {
+      showError('Error: ' + err.message);
     }
   };
 
@@ -225,6 +271,7 @@ export default function AdminPage() {
   const handleBulkResultSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedMatch) return;
+    if (submitState.status === 'loading') return;
 
     // If in JSON mode, parse first
     let sourceRows = bulkResults;
@@ -246,28 +293,36 @@ export default function AdminPage() {
         dream11Points: Number(r.dream11Points)
       }));
 
-    if (validResults.length === 0) return alert('No valid player results filled out.');
+    if (validResults.length === 0) {
+      showError('No valid player results filled out.');
+      return;
+    }
 
-    const res = await fetch('/api/match-results/bulk', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ results: validResults })
-    });
+    showLoading('Saving match results & generating AI commentary...');
+    try {
+      const res = await fetch('/api/match-results/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ results: validResults })
+      });
 
-    const data = await res.json();
-    if (data.success) {
-      alert('Match results saved successfully! AI Summary triggered in background.');
-      // Re-fetch matches to get the actual summary from the database
-      const matchesRes = await fetch('/api/matches');
-      const allMatches = await matchesRes.json();
-      setMatches(allMatches.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()));
-      const updated = allMatches.find((m: any) => m.id === selectedMatch.id);
-      if (updated) {
-        setSelectedMatch(updated);
+      const data = await res.json();
+      if (data.success) {
+        // Re-fetch matches to get the actual summary from the database
+        const matchesRes = await fetch('/api/matches');
+        const allMatches = await matchesRes.json();
+        setMatches(allMatches.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()));
+        const updated = allMatches.find((m: any) => m.id === selectedMatch.id);
+        if (updated) {
+          setSelectedMatch(updated);
+        }
+        setIsEditing(false);
+        showSuccess('Match results saved! AI summary generating in background.');
+      } else {
+        showError('Failed: ' + (data.error || 'unknown'));
       }
-      setIsEditing(false);
-    } else {
-      alert('Failed: ' + data.error);
+    } catch (err: any) {
+      showError('Network error: ' + err.message);
     }
   };
 
@@ -521,22 +576,24 @@ export default function AdminPage() {
               const isActive = selectedMatch?.id === m.id;
 
               return (
-                <div key={m.id} className={`match-card ${isActive ? 'active' : ''}`} onClick={() => handleSelectMatch(m)}>
+                <div key={m.id} className={`match-card ${isActive ? 'active' : ''}`} style={m.cancelled ? { opacity: 0.6 } : undefined} onClick={() => handleSelectMatch(m)}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '40px' }}>
                       <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--muted-foreground)' }}>M{m.id || '?'}</span>
                     </div>
                     <div className="match-logos">
-                      <img src={getTeamLogo(t1)} alt={t1} className="team-logo" style={{ width: 36, height: 36 }} />
+                      <img src={getTeamLogo(t1)} alt={t1} className="team-logo" style={{ width: 36, height: 36, filter: m.cancelled ? 'grayscale(1)' : undefined }} />
                       <span className="vs-badge" style={{ fontSize: '0.6rem' }}>VS</span>
-                      <img src={getTeamLogo(t2)} alt={t2} className="team-logo" style={{ width: 36, height: 36 }} />
+                      <img src={getTeamLogo(t2)} alt={t2} className="team-logo" style={{ width: 36, height: 36, filter: m.cancelled ? 'grayscale(1)' : undefined }} />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', marginLeft: '0.5rem' }}>
-                      <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{m.name}</span>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 500, textDecoration: m.cancelled ? 'line-through' : undefined }}>{m.name}</span>
                       <span style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>{new Date(m.date).toLocaleDateString()}</span>
                     </div>
                   </div>
-                  <span className="badge badge-outline">✅ Scored</span>
+                  {m.cancelled
+                    ? <span className="badge badge-outline" style={{ color: 'var(--muted-foreground)' }}>❌ Cancelled</span>
+                    : <span className="badge badge-outline">✅ Scored</span>}
                 </div>
               )
             })}
@@ -706,7 +763,9 @@ export default function AdminPage() {
                       ) : (
                         <span style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>{selectedMatch ? `Match ${selectedMatch.id}` : ''}</span>
                       )}
-                      <button type="submit" className="btn btn-primary">Save Results ✅</button>
+                      <button type="submit" className="btn btn-primary" disabled={submitState.status === 'loading'}>
+                        {submitState.status === 'loading' ? 'Saving...' : 'Save Results ✅'}
+                      </button>
                     </div>
                   </form>
                 )}
@@ -729,7 +788,9 @@ export default function AdminPage() {
               <label className="label">Date</label>
               <input type="date" className="input" value={newMatch.date} onChange={e => setNewMatch({...newMatch, date: e.target.value})} required />
             </div>
-            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Create Match</button>
+            <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={submitState.status === 'loading'}>
+              {submitState.status === 'loading' ? 'Creating...' : 'Create Match'}
+            </button>
           </form>
         </Modal>
       )}
@@ -814,7 +875,9 @@ export default function AdminPage() {
                 <label className="label" style={{ fontSize: '0.85rem' }}>OR Image URL</label>
                 <input className="input" value={newPlayer.imageUrl} onChange={e => setNewPlayer({...newPlayer, imageUrl: e.target.value})} placeholder="https://..." />
               </div>
-              <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Create Player</button>
+              <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={submitState.status === 'loading'}>
+                {submitState.status === 'loading' ? 'Creating...' : 'Create Player'}
+              </button>
             </form>
           </details>
         </Modal>
@@ -835,9 +898,48 @@ export default function AdminPage() {
                 placeholder="Paste JSON array here..."
               />
             </div>
-            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Import JSON</button>
+            <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={submitState.status === 'loading'}>
+              {submitState.status === 'loading' ? 'Importing...' : 'Import JSON'}
+            </button>
           </form>
         </Modal>
+      )}
+
+      {submitState.status !== 'idle' && (
+        <div className="modal-overlay" style={{ pointerEvents: submitState.status === 'loading' ? 'auto' : 'none' }}>
+          <div className="modal-content" style={{ maxWidth: '380px', textAlign: 'center', padding: '2rem 1.5rem' }}>
+            {submitState.status === 'loading' && (
+              <>
+                <div style={{
+                  width: '52px',
+                  height: '52px',
+                  border: '4px solid var(--border)',
+                  borderTopColor: 'var(--primary, #3b82f6)',
+                  borderRadius: '50%',
+                  margin: '0 auto 1.25rem',
+                  animation: 'spin 0.9s linear infinite'
+                }} />
+                <h3 style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Working on it...</h3>
+                <p style={{ color: 'var(--muted-foreground)', fontSize: '0.9rem' }}>{submitState.message}</p>
+              </>
+            )}
+            {submitState.status === 'success' && (
+              <>
+                <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>✅</div>
+                <h3 style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Done!</h3>
+                <p style={{ color: 'var(--muted-foreground)', fontSize: '0.9rem' }}>{submitState.message}</p>
+              </>
+            )}
+            {submitState.status === 'error' && (
+              <>
+                <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>⚠️</div>
+                <h3 style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Something went wrong</h3>
+                <p style={{ color: 'var(--muted-foreground)', fontSize: '0.9rem' }}>{submitState.message}</p>
+              </>
+            )}
+          </div>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
       )}
 
     </div>
