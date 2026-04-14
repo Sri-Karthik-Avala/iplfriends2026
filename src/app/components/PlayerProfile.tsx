@@ -42,7 +42,8 @@ export default function PlayerProfile({ playerData, matches, overallRank, totalL
   }, [playerData.id, playerData.name, matches]);
 
   const tc = playerData.teamColor || '#555';
-  const img = playerData.imageUrl || 'https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png';
+  const imgRaw = playerData.imageUrl || 'https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png';
+  const img = imgRaw.split('#')[0];
 
   const RankDot = ({ rank, sz }: { rank: number; sz: number }) => {
     const bg = rank === 1 ? '#FABB18' : rank === 2 ? '#C0C0C0' : rank === 3 ? '#CD7F32' : 'var(--muted)';

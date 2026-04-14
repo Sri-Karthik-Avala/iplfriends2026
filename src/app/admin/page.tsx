@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { TEAMS } from '@/lib/constants';
+import { parseImagePos, buildImageUrl } from '@/lib/image';
 
 export default function AdminPage() {
   const [players, setPlayers] = useState<any[]>([]);
@@ -11,7 +12,7 @@ export default function AdminPage() {
   const [activeModal, setActiveModal] = useState<'match' | 'bulk' | 'managePlayers' | null>(null);
   const [deletingPlayerId, setDeletingPlayerId] = useState<string | null>(null);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', team: '', teamColor: '#27272a', imageUrl: '' });
+  const [editForm, setEditForm] = useState({ name: '', team: '', teamColor: '#27272a', imageUrl: '', posX: 50, posY: 30 });
   const [editFile, setEditFile] = useState<File | null>(null);
   const [savingPlayerId, setSavingPlayerId] = useState<string | null>(null);
 
@@ -372,7 +373,15 @@ export default function AdminPage() {
 
   const startEditPlayer = (p: any) => {
     setEditingPlayerId(p.id);
-    setEditForm({ name: p.name, team: p.team, teamColor: p.team_color || '#27272a', imageUrl: p.image_url || '' });
+    const parsed = parseImagePos(p.image_url || '');
+    setEditForm({
+      name: p.name,
+      team: p.team,
+      teamColor: p.team_color || '#27272a',
+      imageUrl: parsed.src,
+      posX: parsed.x,
+      posY: parsed.y
+    });
     setEditFile(null);
   };
 
@@ -391,10 +400,12 @@ export default function AdminPage() {
           alert('Image upload failed.'); return;
         }
       }
+      // Attach crop focal point as URL fragment so the leaderboard avatar uses it
+      finalImageUrl = buildImageUrl(finalImageUrl, editForm.posX, editForm.posY);
       const res = await fetch(`/api/players/${playerId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...editForm, imageUrl: finalImageUrl })
+        body: JSON.stringify({ name: editForm.name, team: editForm.team, teamColor: editForm.teamColor, imageUrl: finalImageUrl })
       });
       const data = await res.json();
       if (data.success) {
@@ -808,13 +819,68 @@ export default function AdminPage() {
                       <input type="color" className="input" value={editForm.teamColor} onChange={e => setEditForm({...editForm, teamColor: e.target.value})} style={{ width: '50px', padding: '0.2rem', flex: 'none' }} />
                     </div>
                     <input className="input" placeholder="Team Name" value={editForm.team} onChange={e => setEditForm({...editForm, team: e.target.value})} />
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                      {editForm.imageUrl && (
-                        <img src={editForm.imageUrl} alt="" style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border)', flexShrink: 0 }} />
-                      )}
-                      <input type="file" className="input" accept="image/*" onChange={e => setEditFile(e.target.files?.[0] || null)} style={{ flex: 1, fontSize: '0.8rem' }} />
-                    </div>
-                    <input className="input" placeholder="Image URL (optional)" value={editForm.imageUrl} onChange={e => setEditForm({...editForm, imageUrl: e.target.value})} style={{ fontSize: '0.8rem' }} />
+                    <input type="file" className="input" accept="image/*" onChange={e => setEditFile(e.target.files?.[0] || null)} style={{ fontSize: '0.8rem' }} />
+                    <input className="input" placeholder="Image URL (optional)" value={editForm.imageUrl} onChange={e => setEditForm({...editForm, imageUrl: e.target.value.split('#')[0] })} style={{ fontSize: '0.8rem' }} />
+                    {editForm.imageUrl && (
+                      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', padding: '0.6rem', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
+                        <div style={{
+                          width: 72,
+                          height: 72,
+                          borderRadius: 8,
+                          overflow: 'hidden',
+                          border: `2px solid ${editForm.teamColor || 'var(--border)'}`,
+                          background: '#1a1a1a',
+                          flexShrink: 0
+                        }}>
+                          <img
+                            src={editForm.imageUrl}
+                            alt=""
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover',
+                              objectPosition: `${editForm.posX}% ${editForm.posY}%`,
+                              display: 'block'
+                            }}
+                          />
+                        </div>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.4rem', minWidth: 0 }}>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--muted-foreground)', marginBottom: '0.1rem' }}>
+                            Crop focus for avatar ({editForm.posX}%, {editForm.posY}%)
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ fontSize: '0.7rem', width: '12px', color: 'var(--muted-foreground)' }}>X</span>
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              value={editForm.posX}
+                              onChange={e => setEditForm({...editForm, posX: Number(e.target.value)})}
+                              style={{ flex: 1 }}
+                            />
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ fontSize: '0.7rem', width: '12px', color: 'var(--muted-foreground)' }}>Y</span>
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              value={editForm.posY}
+                              onChange={e => setEditForm({...editForm, posY: Number(e.target.value)})}
+                              style={{ flex: 1 }}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            className="btn btn-ghost"
+                            style={{ fontSize: '0.7rem', padding: '0.2rem 0.4rem', alignSelf: 'flex-start' }}
+                            onClick={() => setEditForm({...editForm, posX: 50, posY: 30})}
+                          >
+                            Reset crop
+                          </button>
+                        </div>
+                      </div>
+                    )}
                     <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                       <button className="btn btn-ghost" style={{ fontSize: '0.8rem' }} onClick={() => setEditingPlayerId(null)}>Cancel</button>
                       <button className="btn btn-primary" style={{ fontSize: '0.8rem' }} disabled={savingPlayerId === p.id} onClick={() => handleSavePlayer(p.id)}>
@@ -824,8 +890,11 @@ export default function AdminPage() {
                   </div>
                 ) : (
                   /* View Mode */
+                  (() => {
+                    const { src: thumbSrc, objectPosition: thumbPos } = parseImagePos(p.image_url);
+                    return (
                   <div style={{ display: 'flex', alignItems: 'center', padding: '0.6rem 0.8rem', gap: '0.6rem' }}>
-                    <img src={p.image_url || 'https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png'} alt={p.name} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', border: `2px solid ${p.team_color || 'var(--border)'}`, flexShrink: 0 }} />
+                    <img src={thumbSrc || 'https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png'} alt={p.name} style={{ width: '32px', height: '32px', borderRadius: '6px', objectFit: 'cover', objectPosition: thumbPos, border: `2px solid ${p.team_color || 'var(--border)'}`, flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>{p.name}</div>
                       <div style={{ fontSize: '0.72rem', color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -843,6 +912,8 @@ export default function AdminPage() {
                       {deletingPlayerId === p.id ? '...' : 'Delete'}
                     </button>
                   </div>
+                    );
+                  })()
                 )}
               </div>
             ))}

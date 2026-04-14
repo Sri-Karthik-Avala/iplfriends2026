@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { TEAMS } from '@/lib/constants';
+import { parseImagePos } from '@/lib/image';
 import Gravestone from './components/Gravestone';
 import Link from 'next/link';
 
@@ -207,10 +208,12 @@ export default function LeaderboardPage() {
           )}
 
           {!loading && players.length > 0 && leaderboard.length === 0 && (
-            players.map(p => (
+            players.map(p => {
+              const { src, objectPosition } = parseImagePos(p.imageUrl);
+              return (
               <div key={p.id} className="player-card">
                 <div className="player-rank numeric">-</div>
-                <img src={p.imageUrl} alt={p.name} className="player-avatar" />
+                <img src={src} alt={p.name} className="player-avatar" style={{ objectPosition }} />
                 <div className="player-info">
                   <div className="player-name">{p.name}</div>
                   <div className="player-team">{p.team}</div>
@@ -220,7 +223,8 @@ export default function LeaderboardPage() {
                   <div className="points-label">rank pts</div>
                 </div>
               </div>
-            ))
+            );
+            })
           )}
 
           {!loading && leaderboard.map((lb: any, idx: number) => {
@@ -228,6 +232,7 @@ export default function LeaderboardPage() {
             const playerTitle = latestSummary ? extractPlayerTitle(latestSummary, lb.player.name) : null;
             const stats = playerMeta.buildStats(lb.player.id);
             const badges = playerMeta.computeAchievements(lb.player.id);
+            const { src: avatarSrc, objectPosition: avatarPos } = parseImagePos(lb.player.imageUrl);
             return (
               <Link
                 key={lb.player.id}
@@ -240,7 +245,7 @@ export default function LeaderboardPage() {
                 <div className={`player-rank ${rank.emoji ? '' : 'numeric'}`}>
                   {rank.emoji || `#${idx + 1}`}
                 </div>
-                <img src={lb.player.imageUrl} alt={lb.player.name} className="player-avatar" style={{ borderColor: lb.player.teamColor }} />
+                <img src={avatarSrc} alt={lb.player.name} className="player-avatar" style={{ borderColor: lb.player.teamColor, objectPosition: avatarPos }} />
                 <div className="player-info">
                   <div className="player-name">
                     {lb.player.name}
