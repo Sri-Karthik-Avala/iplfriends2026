@@ -242,11 +242,21 @@ export default function LeaderboardPage() {
                 </div>
                 <img src={lb.player.imageUrl} alt={lb.player.name} className="player-avatar" style={{ borderColor: lb.player.teamColor }} />
                 <div className="player-info">
-                  <div className="player-name">{lb.player.name}</div>
+                  <div className="player-name">
+                    {lb.player.name}
+                    <span className="mobile-points">{lb._sum.leaguePoints || 0}<span className="mobile-points-label"> pts</span></span>
+                  </div>
                   {playerTitle ? (
                     <div className="player-title">"{playerTitle}"</div>
                   ) : (
                     <div className="player-team">{lb.player.team}</div>
+                  )}
+                  {stats.played > 0 && (
+                    <div className="mobile-stats">
+                      <span>{stats.played}/{stats.totalCompleted} played</span>
+                      <span>avg #{stats.avgRank}</span>
+                      <span>my11 {stats.avgMy11}</span>
+                    </div>
                   )}
                   {badges.length > 0 && (
                     <div className="player-badges">
