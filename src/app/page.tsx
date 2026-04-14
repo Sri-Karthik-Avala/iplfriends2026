@@ -80,6 +80,94 @@ export default function LeaderboardPage() {
 
   const latestSummary = latestSummaryMatch?.summary || null;
 
+  // Per-player aggregated stats + achievement badges computed from full match history
+  const playerMeta = useMemo(() => {
+    type Entry = {
+      played: number;
+      ranks: number[];          // finishing ranks in order played
+      my11: number[];           // dream11 scores in order played
+      firsts: number;
+      topThrees: number;
+      dnps: number;
+      bestMy11: number;
+    };
+    const metaMap: Record<string, Entry> = {};
+    players.forEach((p: any) => {
+      metaMap[p.id] = { played: 0, ranks: [], my11: [], firsts: 0, topThrees: 0, dnps: 0, bestMy11: 0 };
+    });
+
+    // Chronological order (oldest first) of real scored matches only
+    const scored = matches
+      .filter((m: any) => m.results && m.results.length > 0 && !m.cancelled)
+      .sort((a: any, b: any) => Number(a.id) - Number(b.id));
+
+    scored.forEach((m: any) => {
+      const playedIds = new Set<string>();
+      m.results.forEach((r: any) => {
+        const e = metaMap[r.playerId];
+        if (!e) return;
+        playedIds.add(r.playerId);
+        e.played += 1;
+        e.ranks.push(r.rank);
+        e.my11.push(r.dream11Points || 0);
+        if (r.rank === 1) e.firsts += 1;
+        if (r.rank <= 3) e.topThrees += 1;
+        if ((r.dream11Points || 0) > e.bestMy11) e.bestMy11 = r.dream11Points || 0;
+      });
+      // Mark DNP for players not in this match's results
+      players.forEach((p: any) => {
+        if (!playedIds.has(p.id) && metaMap[p.id]) metaMap[p.id].dnps += 1;
+      });
+    });
+
+    const totalCompleted = scored.length;
+    const entries = Object.values(metaMap);
+    const maxFirsts = Math.max(0, ...entries.map(e => e.firsts));
+    const maxMy11 = Math.max(0, ...entries.map(e => e.bestMy11));
+    const maxDnps = Math.max(0, ...entries.map(e => e.dnps));
+    const leaderId = leaderboard[0]?.player?.id;
+
+    const computeAchievements = (playerId: string) => {
+      const s = metaMap[playerId];
+      const badges: { emoji: string; label: string; kind: 'gold' | 'blue' | 'red' }[] = [];
+      if (!s || totalCompleted === 0) return badges;
+
+      if (playerId === leaderId) {
+        badges.push({ emoji: '🏆', label: 'Leader', kind: 'gold' });
+      }
+      if (maxFirsts >= 2 && s.firsts === maxFirsts) {
+        badges.push({ emoji: '🥇', label: `${s.firsts}× Gold`, kind: 'gold' });
+      }
+      if (maxMy11 > 0 && s.bestMy11 === maxMy11) {
+        badges.push({ emoji: '⚡', label: `Peak ${Math.round(maxMy11)}`, kind: 'gold' });
+      }
+      if (totalCompleted >= 3 && s.played === totalCompleted) {
+        badges.push({ emoji: '💎', label: 'Ever Present', kind: 'blue' });
+      }
+      if (s.ranks.length >= 3 && s.ranks.slice(-3).every(r => r <= 3)) {
+        badges.push({ emoji: '🔥', label: 'Hot Streak', kind: 'gold' });
+      } else if (s.played >= 4 && s.topThrees / s.played >= 0.6) {
+        badges.push({ emoji: '🎯', label: 'Clutch', kind: 'blue' });
+      }
+      if (maxDnps >= 3 && s.dnps === maxDnps) {
+        badges.push({ emoji: '💀', label: `${s.dnps} DNP`, kind: 'red' });
+      }
+      return badges.slice(0, 3);
+    };
+
+    const buildStats = (playerId: string) => {
+      const s = metaMap[playerId];
+      if (!s || s.played === 0) {
+        return { played: 0, totalCompleted, avgRank: '—', avgMy11: '—' };
+      }
+      const avgRank = (s.ranks.reduce((a, b) => a + b, 0) / s.played).toFixed(1);
+      const avgMy11 = Math.round(s.my11.reduce((a, b) => a + b, 0) / s.played).toString();
+      return { played: s.played, totalCompleted, avgRank, avgMy11 };
+    };
+
+    return { computeAchievements, buildStats, totalCompleted };
+  }, [matches, players, leaderboard]);
+
   const getRankDisplay = (idx: number) => {
     if (idx === 0) return { emoji: '🥇', className: 'rank-1' };
     if (idx === 1) return { emoji: '🥈', className: 'rank-2' };
@@ -126,6 +214,8 @@ export default function LeaderboardPage() {
           {!loading && leaderboard.map((lb: any, idx: number) => {
             const rank = getRankDisplay(idx);
             const playerTitle = latestSummary ? extractPlayerTitle(latestSummary, lb.player.name) : null;
+            const stats = playerMeta.buildStats(lb.player.id);
+            const badges = playerMeta.computeAchievements(lb.player.id);
             return (
               <Link
                 key={lb.player.id}
@@ -145,6 +235,23 @@ export default function LeaderboardPage() {
                     <div className="player-title">"{playerTitle}"</div>
                   ) : (
                     <div className="player-team">{lb.player.team}</div>
+                  )}
+                  {stats.played > 0 && (
+                    <div className="player-stats-row">
+                      <span>Played {stats.played}/{stats.totalCompleted}</span>
+                      <span>Avg #{stats.avgRank}</span>
+                      <span>Avg My11 {stats.avgMy11}</span>
+                    </div>
+                  )}
+                  {badges.length > 0 && (
+                    <div className="player-badges">
+                      {badges.map((b, i) => (
+                        <span key={i} className={`achievement-chip chip-${b.kind}`} title={b.label}>
+                          <span className="chip-emoji">{b.emoji}</span>
+                          <span className="chip-label">{b.label}</span>
+                        </span>
+                      ))}
+                    </div>
                   )}
                 </div>
                 <div className="player-points">
