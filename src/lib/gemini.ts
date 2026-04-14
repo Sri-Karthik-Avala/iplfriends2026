@@ -1,8 +1,81 @@
 import { MATCHES } from '@/lib/constants';
 
-export async function generateSummary(currentMatchId: string, currentResults: any[], db: any) {
+async function callOpenAI(systemPrompt: string, userPrompt: string): Promise<string | null> {
   if (!process.env.OPENAI_API_KEY) {
-    console.log("No OPENAI_API_KEY found, skipping summary generation.");
+    console.log("No OPENAI_API_KEY, skipping OpenAI attempt.");
+    return null;
+  }
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.9,
+        max_tokens: 2000
+      })
+    });
+    if (!response.ok) {
+      const errText = await response.text().catch(() => '');
+      console.warn(`OpenAI call failed (${response.status}): ${errText.slice(0, 300)}`);
+      return null;
+    }
+    const data = await response.json();
+    const content = data?.choices?.[0]?.message?.content;
+    return (typeof content === 'string' && content.trim().length > 0) ? content : null;
+  } catch (err) {
+    console.warn("OpenAI call threw:", err);
+    return null;
+  }
+}
+
+async function callGemini(systemPrompt: string, userPrompt: string): Promise<string | null> {
+  if (!process.env.GEMINI_API_KEY) {
+    console.log("No GEMINI_API_KEY, skipping Gemini fallback.");
+    return null;
+  }
+  try {
+    const model = 'gemini-2.5-flash';
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+        generationConfig: {
+          temperature: 0.9,
+          maxOutputTokens: 2000
+        }
+      })
+    });
+    if (!response.ok) {
+      const errText = await response.text().catch(() => '');
+      console.warn(`Gemini call failed (${response.status}): ${errText.slice(0, 300)}`);
+      return null;
+    }
+    const data = await response.json();
+    const parts = data?.candidates?.[0]?.content?.parts;
+    const text = Array.isArray(parts)
+      ? parts.map((p: any) => p?.text || '').join('')
+      : '';
+    return text.trim().length > 0 ? text : null;
+  } catch (err) {
+    console.warn("Gemini call threw:", err);
+    return null;
+  }
+}
+
+export async function generateSummary(currentMatchId: string, currentResults: any[], db: any) {
+  if (!process.env.OPENAI_API_KEY && !process.env.GEMINI_API_KEY) {
+    console.log("Neither OPENAI_API_KEY nor GEMINI_API_KEY found, skipping summary generation.");
     return null;
   }
 
@@ -39,7 +112,7 @@ export async function generateSummary(currentMatchId: string, currentResults: an
     });
 
     // Build per-player recent form (last 3 matches)
-    const matchIds = [...new Set(db.matchResults.map((r: any) => r.matchId))].sort((a: any, b: any) => Number(a) - Number(b));
+    const matchIds = Array.from(new Set(db.matchResults.map((r: any) => r.matchId))).sort((a: any, b: any) => Number(a) - Number(b));
     const recentMatchIds = matchIds.filter((id: any) => id !== currentMatchId).slice(-3);
     let recentForm = "\nRecent form (last 3 matches before this one):\n";
     db.players.forEach((p: any) => {
@@ -131,25 +204,17 @@ TONE RULES:
 
 No markdown headers. Plain text with emojis. Separate each player with a blank line.`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.9,
-        max_tokens: 2000
-      })
-    });
+    // Primary: OpenAI
+    const openaiResult = await callOpenAI(systemPrompt, userPrompt);
+    if (openaiResult) return openaiResult;
 
-    const data = await response.json();
-    return data?.choices?.[0]?.message?.content || null;
+    // Fallback: Gemini with the exact same prompt/structure
+    console.log("OpenAI unavailable or failed, falling back to Gemini...");
+    const geminiResult = await callGemini(systemPrompt, userPrompt);
+    if (geminiResult) return geminiResult;
+
+    console.warn("Both OpenAI and Gemini summary generation failed.");
+    return null;
   } catch (err) {
     console.error("AI summary failed:", err);
     return null;
