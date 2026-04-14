@@ -862,6 +862,243 @@ select.input option {
   animation: slideIn 0.2s ease-out;
 }
 
+/* Wide modal for richer management screens (Manage Players, etc.) */
+.modal-content.modal-wide {
+  max-width: 920px;
+  max-height: 92vh;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.modal-content.modal-wide .modal-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.modal-content.modal-wide .modal-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.modal-content.modal-wide .modal-header p {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+}
+.modal-content.modal-wide .modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+
+/* === Manage Players layout === */
+.mp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+.mp-row {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--muted);
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.mp-row:hover {
+  border-color: var(--muted-foreground);
+}
+.mp-row.mp-row-editing {
+  border-color: var(--primary, #3b82f6);
+}
+
+.mp-view {
+  display: flex;
+  align-items: center;
+  padding: 0.65rem 0.85rem;
+  gap: 0.75rem;
+}
+.mp-view-img {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.mp-view-meta {
+  flex: 1;
+  min-width: 0;
+}
+.mp-view-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+.mp-view-team {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 2px;
+}
+.mp-team-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.mp-view-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+.mp-view-actions .btn {
+  font-size: 0.78rem;
+  padding: 0.35rem 0.7rem;
+}
+
+/* Edit mode — 2-column grid on desktop, stacked on mobile */
+.mp-edit {
+  padding: 1rem;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+.mp-edit-crop {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.mp-edit-preview {
+  width: 200px;
+  height: 200px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #1a1a1a;
+  border: 3px solid var(--border);
+  align-self: center;
+}
+.mp-edit-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.mp-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.mp-slider-row input[type="range"] {
+  flex: 1;
+}
+.mp-slider-row .mp-slider-label {
+  width: 14px;
+  font-weight: 700;
+}
+.mp-slider-row .mp-slider-val {
+  width: 34px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.mp-edit-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+.mp-edit-fields .mp-row-pair {
+  display: flex;
+  gap: 0.5rem;
+}
+.mp-edit-fields .mp-row-pair > *:first-child { flex: 1; }
+.mp-edit-fields input[type="color"] {
+  width: 48px;
+  padding: 0.2rem;
+  flex: none;
+}
+.mp-edit-fields .mp-label {
+  font-size: 0.7rem;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 0.2rem;
+}
+.mp-edit-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+/* Add New Player section */
+.mp-add {
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+  margin-top: 0.5rem;
+}
+.mp-add summary {
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--foreground);
+  padding: 0.4rem 0;
+  list-style: none;
+  user-select: none;
+}
+.mp-add summary::before {
+  content: '+';
+  display: inline-block;
+  width: 20px;
+  color: var(--muted-foreground);
+  font-weight: 400;
+}
+.mp-add[open] summary::before { content: '−'; }
+.mp-add form {
+  padding-top: 0.75rem;
+}
+
+/* Mobile: stack edit-mode vertically, smaller preview */
+@media (max-width: 720px) {
+  .modal-content.modal-wide {
+    max-height: 96vh;
+    border-radius: 0;
+    max-width: 100%;
+    height: 100%;
+  }
+  .modal-overlay {
+    padding: 0;
+  }
+  .mp-edit {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    padding: 0.85rem;
+  }
+  .mp-edit-preview {
+    width: 140px;
+    height: 140px;
+  }
+  .mp-view-img {
+    width: 40px;
+    height: 40px;
+  }
+  .mp-view-actions .btn {
+    font-size: 0.72rem;
+    padding: 0.3rem 0.55rem;
+  }
+  .modal-content.modal-wide .modal-body {
+    padding: 1rem 1rem 1.5rem;
+  }
+}
+
 @keyframes slideIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }

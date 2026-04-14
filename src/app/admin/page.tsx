@@ -476,12 +476,24 @@ export default function AdminPage() {
     setBulkResults(updated);
   };
 
-  const Modal = ({ title, children, onClose }: any) => (
+  const Modal = ({ title, subtitle, children, onClose, wide }: any) => (
     <div className="modal-overlay">
-      <div className="modal-content">
+      <div className={`modal-content${wide ? ' modal-wide' : ''}`}>
         <button className="modal-close" onClick={onClose}>×</button>
-        <h2 className="card-title" style={{ marginBottom: '1.5rem' }}>{title}</h2>
-        {children}
+        {wide ? (
+          <>
+            <div className="modal-header">
+              <h2>{title}</h2>
+              {subtitle && <p>{subtitle}</p>}
+            </div>
+            <div className="modal-body">{children}</div>
+          </>
+        ) : (
+          <>
+            <h2 className="card-title" style={{ marginBottom: '1.5rem' }}>{title}</h2>
+            {children}
+          </>
+        )}
       </div>
     </div>
   );
@@ -807,122 +819,143 @@ export default function AdminPage() {
       )}
 
       {activeModal === 'managePlayers' && (
-        <Modal title="Manage Players" onClose={() => { setActiveModal(null); setEditingPlayerId(null); }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '60vh', overflowY: 'auto', marginBottom: '1rem' }}>
-            {players.map((p: any) => (
-              <div key={p.id} style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--muted)', overflow: 'hidden' }}>
-                {editingPlayerId === p.id ? (
-                  /* Edit Mode */
-                  <div style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <input className="input" placeholder="Name" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} style={{ flex: 1 }} />
-                      <input type="color" className="input" value={editForm.teamColor} onChange={e => setEditForm({...editForm, teamColor: e.target.value})} style={{ width: '50px', padding: '0.2rem', flex: 'none' }} />
-                    </div>
-                    <input className="input" placeholder="Team Name" value={editForm.team} onChange={e => setEditForm({...editForm, team: e.target.value})} />
-                    <input type="file" className="input" accept="image/*" onChange={e => setEditFile(e.target.files?.[0] || null)} style={{ fontSize: '0.8rem' }} />
-                    <input className="input" placeholder="Image URL (optional)" value={editForm.imageUrl} onChange={e => setEditForm({...editForm, imageUrl: e.target.value.split('#')[0] })} style={{ fontSize: '0.8rem' }} />
-                    {editForm.imageUrl && (
-                      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', padding: '0.6rem', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
-                        <div style={{
-                          width: 72,
-                          height: 72,
-                          borderRadius: 8,
-                          overflow: 'hidden',
-                          border: `2px solid ${editForm.teamColor || 'var(--border)'}`,
-                          background: '#1a1a1a',
-                          flexShrink: 0
-                        }}>
-                          <img
-                            src={editForm.imageUrl}
-                            alt=""
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'cover',
-                              objectPosition: `${editForm.posX}% ${editForm.posY}%`,
-                              display: 'block'
-                            }}
-                          />
+        <Modal
+          title="Manage Players"
+          subtitle={`${players.length} player${players.length === 1 ? '' : 's'} in the league`}
+          wide
+          onClose={() => { setActiveModal(null); setEditingPlayerId(null); }}
+        >
+          <div className="mp-list">
+            {players.map((p: any) => {
+              const isEditing = editingPlayerId === p.id;
+              if (isEditing) {
+                return (
+                  <div key={p.id} className="mp-row mp-row-editing">
+                    <div className="mp-edit">
+                      {/* LEFT: photo preview + crop sliders */}
+                      <div className="mp-edit-crop">
+                        <div className="mp-edit-preview" style={{ borderColor: editForm.teamColor || 'var(--border)' }}>
+                          {editForm.imageUrl ? (
+                            <img
+                              src={editForm.imageUrl}
+                              alt=""
+                              style={{ objectPosition: `${editForm.posX}% ${editForm.posY}%` }}
+                            />
+                          ) : (
+                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted-foreground)', fontSize: '0.75rem' }}>
+                              No image
+                            </div>
+                          )}
                         </div>
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.4rem', minWidth: 0 }}>
-                          <div style={{ fontSize: '0.7rem', color: 'var(--muted-foreground)', marginBottom: '0.1rem' }}>
-                            Crop focus for avatar ({editForm.posX}%, {editForm.posY}%)
+                        {editForm.imageUrl && (
+                          <>
+                            <div className="mp-slider-row">
+                              <span className="mp-slider-label">X</span>
+                              <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={editForm.posX}
+                                onChange={e => setEditForm({...editForm, posX: Number(e.target.value)})}
+                              />
+                              <span className="mp-slider-val">{editForm.posX}%</span>
+                            </div>
+                            <div className="mp-slider-row">
+                              <span className="mp-slider-label">Y</span>
+                              <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={editForm.posY}
+                                onChange={e => setEditForm({...editForm, posY: Number(e.target.value)})}
+                              />
+                              <span className="mp-slider-val">{editForm.posY}%</span>
+                            </div>
+                            <button
+                              type="button"
+                              className="btn btn-ghost"
+                              style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem', alignSelf: 'flex-start' }}
+                              onClick={() => setEditForm({...editForm, posX: 50, posY: 30})}
+                            >
+                              Reset crop
+                            </button>
+                          </>
+                        )}
+                      </div>
+
+                      {/* RIGHT: editable fields */}
+                      <div className="mp-edit-fields">
+                        <div>
+                          <div className="mp-label">Name</div>
+                          <div className="mp-row-pair">
+                            <input className="input" placeholder="Name" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} />
+                            <input type="color" className="input" value={editForm.teamColor} onChange={e => setEditForm({...editForm, teamColor: e.target.value})} title="Team color" />
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{ fontSize: '0.7rem', width: '12px', color: 'var(--muted-foreground)' }}>X</span>
-                            <input
-                              type="range"
-                              min="0"
-                              max="100"
-                              value={editForm.posX}
-                              onChange={e => setEditForm({...editForm, posX: Number(e.target.value)})}
-                              style={{ flex: 1 }}
-                            />
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{ fontSize: '0.7rem', width: '12px', color: 'var(--muted-foreground)' }}>Y</span>
-                            <input
-                              type="range"
-                              min="0"
-                              max="100"
-                              value={editForm.posY}
-                              onChange={e => setEditForm({...editForm, posY: Number(e.target.value)})}
-                              style={{ flex: 1 }}
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            className="btn btn-ghost"
-                            style={{ fontSize: '0.7rem', padding: '0.2rem 0.4rem', alignSelf: 'flex-start' }}
-                            onClick={() => setEditForm({...editForm, posX: 50, posY: 30})}
-                          >
-                            Reset crop
-                          </button>
+                        </div>
+                        <div>
+                          <div className="mp-label">Team</div>
+                          <input className="input" placeholder="Team Name" value={editForm.team} onChange={e => setEditForm({...editForm, team: e.target.value})} />
+                        </div>
+                        <div>
+                          <div className="mp-label">Upload new photo</div>
+                          <input type="file" className="input" accept="image/*" onChange={e => setEditFile(e.target.files?.[0] || null)} style={{ fontSize: '0.8rem' }} />
+                        </div>
+                        <div>
+                          <div className="mp-label">or paste image URL</div>
+                          <input className="input" placeholder="https://..." value={editForm.imageUrl} onChange={e => setEditForm({...editForm, imageUrl: e.target.value.split('#')[0] })} style={{ fontSize: '0.8rem' }} />
                         </div>
                       </div>
-                    )}
-                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                      <button className="btn btn-ghost" style={{ fontSize: '0.8rem' }} onClick={() => setEditingPlayerId(null)}>Cancel</button>
-                      <button className="btn btn-primary" style={{ fontSize: '0.8rem' }} disabled={savingPlayerId === p.id} onClick={() => handleSavePlayer(p.id)}>
-                        {savingPlayerId === p.id ? 'Saving...' : 'Save'}
-                      </button>
+
+                      {/* Footer actions span both columns */}
+                      <div className="mp-edit-actions">
+                        <button className="btn btn-ghost" onClick={() => setEditingPlayerId(null)}>Cancel</button>
+                        <button className="btn btn-primary" disabled={savingPlayerId === p.id} onClick={() => handleSavePlayer(p.id)}>
+                          {savingPlayerId === p.id ? 'Saving...' : 'Save changes'}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                ) : (
-                  /* View Mode */
-                  (() => {
-                    const { src: thumbSrc, objectPosition: thumbPos } = parseImagePos(p.image_url);
-                    return (
-                  <div style={{ display: 'flex', alignItems: 'center', padding: '0.6rem 0.8rem', gap: '0.6rem' }}>
-                    <img src={thumbSrc || 'https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png'} alt={p.name} style={{ width: '32px', height: '32px', borderRadius: '6px', objectFit: 'cover', objectPosition: thumbPos, border: `2px solid ${p.team_color || 'var(--border)'}`, flexShrink: 0 }} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>{p.name}</div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: p.team_color || '#555', display: 'inline-block' }} />
+                );
+              }
+
+              // View mode
+              const { src: thumbSrc, objectPosition: thumbPos } = parseImagePos(p.image_url);
+              return (
+                <div key={p.id} className="mp-row">
+                  <div className="mp-view">
+                    <img
+                      src={thumbSrc || 'https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png'}
+                      alt={p.name}
+                      className="mp-view-img"
+                      style={{ objectPosition: thumbPos, border: `2px solid ${p.team_color || 'var(--border)'}` }}
+                    />
+                    <div className="mp-view-meta">
+                      <div className="mp-view-name">{p.name}</div>
+                      <div className="mp-view-team">
+                        <span className="mp-team-dot" style={{ background: p.team_color || '#555' }} />
                         {p.team}
                       </div>
                     </div>
-                    <button className="btn btn-ghost" style={{ fontSize: '0.78rem', padding: '0.3rem 0.5rem' }} onClick={() => startEditPlayer(p)}>Edit</button>
-                    <button
-                      className="btn btn-ghost"
-                      style={{ color: '#e11d48', fontSize: '0.78rem', padding: '0.3rem 0.5rem' }}
-                      disabled={deletingPlayerId === p.id}
-                      onClick={() => handleDeletePlayer(p.id, p.name)}
-                    >
-                      {deletingPlayerId === p.id ? '...' : 'Delete'}
-                    </button>
+                    <div className="mp-view-actions">
+                      <button className="btn btn-ghost" onClick={() => startEditPlayer(p)}>Edit</button>
+                      <button
+                        className="btn btn-ghost"
+                        style={{ color: '#e11d48' }}
+                        disabled={deletingPlayerId === p.id}
+                        onClick={() => handleDeletePlayer(p.id, p.name)}
+                      >
+                        {deletingPlayerId === p.id ? '...' : 'Delete'}
+                      </button>
+                    </div>
                   </div>
-                    );
-                  })()
-                )}
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
+
           {/* Add New Player */}
-          <details style={{ borderTop: '1px solid var(--border)', paddingTop: '0.75rem' }}>
-            <summary style={{ cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, color: 'var(--foreground)', marginBottom: '0.75rem' }}>
-              + Add New Player
-            </summary>
+          <details className="mp-add">
+            <summary>Add New Player</summary>
             <form onSubmit={handleCreatePlayer}>
               <div className="form-group">
                 <label className="label">Name</label>
