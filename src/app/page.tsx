@@ -87,13 +87,15 @@ export default function LeaderboardPage() {
       ranks: number[];          // finishing ranks in order played
       my11: number[];           // dream11 scores in order played
       firsts: number;
+      seconds: number;
+      thirds: number;
       topThrees: number;
       dnps: number;
       bestMy11: number;
     };
     const metaMap: Record<string, Entry> = {};
     players.forEach((p: any) => {
-      metaMap[p.id] = { played: 0, ranks: [], my11: [], firsts: 0, topThrees: 0, dnps: 0, bestMy11: 0 };
+      metaMap[p.id] = { played: 0, ranks: [], my11: [], firsts: 0, seconds: 0, thirds: 0, topThrees: 0, dnps: 0, bestMy11: 0 };
     });
 
     // Chronological order (oldest first) of real scored matches only
@@ -111,6 +113,8 @@ export default function LeaderboardPage() {
         e.ranks.push(r.rank);
         e.my11.push(r.dream11Points || 0);
         if (r.rank === 1) e.firsts += 1;
+        if (r.rank === 2) e.seconds += 1;
+        if (r.rank === 3) e.thirds += 1;
         if (r.rank <= 3) e.topThrees += 1;
         if ((r.dream11Points || 0) > e.bestMy11) e.bestMy11 = r.dream11Points || 0;
       });
@@ -123,13 +127,15 @@ export default function LeaderboardPage() {
     const totalCompleted = scored.length;
     const entries = Object.values(metaMap);
     const maxFirsts = Math.max(0, ...entries.map(e => e.firsts));
+    const maxSeconds = Math.max(0, ...entries.map(e => e.seconds));
+    const maxThirds = Math.max(0, ...entries.map(e => e.thirds));
     const maxMy11 = Math.max(0, ...entries.map(e => e.bestMy11));
     const maxDnps = Math.max(0, ...entries.map(e => e.dnps));
     const leaderId = leaderboard[0]?.player?.id;
 
     const computeAchievements = (playerId: string) => {
       const s = metaMap[playerId];
-      const badges: { emoji: string; label: string; kind: 'gold' | 'blue' | 'red' }[] = [];
+      const badges: { emoji: string; label: string; kind: 'gold' | 'silver' | 'bronze' | 'blue' | 'red' }[] = [];
       if (!s || totalCompleted === 0) return badges;
 
       if (playerId === leaderId) {
@@ -137,6 +143,12 @@ export default function LeaderboardPage() {
       }
       if (maxFirsts >= 2 && s.firsts === maxFirsts) {
         badges.push({ emoji: '🥇', label: `${s.firsts}× Gold`, kind: 'gold' });
+      }
+      if (maxSeconds >= 2 && s.seconds === maxSeconds) {
+        badges.push({ emoji: '🥈', label: `${s.seconds}× Silver`, kind: 'silver' });
+      }
+      if (maxThirds >= 2 && s.thirds === maxThirds) {
+        badges.push({ emoji: '🥉', label: `${s.thirds}× Bronze`, kind: 'bronze' });
       }
       if (maxMy11 > 0 && s.bestMy11 === maxMy11) {
         badges.push({ emoji: '⚡', label: `Peak ${Math.round(maxMy11)}`, kind: 'gold' });
@@ -152,7 +164,7 @@ export default function LeaderboardPage() {
       if (maxDnps >= 3 && s.dnps === maxDnps) {
         badges.push({ emoji: '💀', label: `${s.dnps} DNP`, kind: 'red' });
       }
-      return badges.slice(0, 3);
+      return badges.slice(0, 4);
     };
 
     const buildStats = (playerId: string) => {
@@ -160,7 +172,7 @@ export default function LeaderboardPage() {
       if (!s || s.played === 0) {
         return { played: 0, totalCompleted, avgRank: '—', avgMy11: '—' };
       }
-      const avgRank = (s.ranks.reduce((a, b) => a + b, 0) / s.played).toFixed(1);
+      const avgRank = Math.round(s.ranks.reduce((a, b) => a + b, 0) / s.played).toString();
       const avgMy11 = Math.round(s.my11.reduce((a, b) => a + b, 0) / s.played).toString();
       return { played: s.played, totalCompleted, avgRank, avgMy11 };
     };
@@ -236,13 +248,6 @@ export default function LeaderboardPage() {
                   ) : (
                     <div className="player-team">{lb.player.team}</div>
                   )}
-                  {stats.played > 0 && (
-                    <div className="player-stats-row">
-                      <span>Played {stats.played}/{stats.totalCompleted}</span>
-                      <span>Avg #{stats.avgRank}</span>
-                      <span>Avg My11 {stats.avgMy11}</span>
-                    </div>
-                  )}
                   {badges.length > 0 && (
                     <div className="player-badges">
                       {badges.map((b, i) => (
@@ -258,6 +263,22 @@ export default function LeaderboardPage() {
                   <div className="points-value">{lb._sum.leaguePoints || 0}</div>
                   <div className="points-label">rank pts</div>
                 </div>
+                {stats.played > 0 && (
+                  <>
+                    <div className="player-stat">
+                      <div className="stat-value">{stats.played}<span className="stat-sub">/{stats.totalCompleted}</span></div>
+                      <div className="stat-label">played</div>
+                    </div>
+                    <div className="player-stat">
+                      <div className="stat-value">#{stats.avgRank}</div>
+                      <div className="stat-label">avg rank</div>
+                    </div>
+                    <div className="player-stat player-stat-my11">
+                      <div className="stat-value">{stats.avgMy11}</div>
+                      <div className="stat-label">avg my11</div>
+                    </div>
+                  </>
+                )}
               </div>
               </Link>
             );
