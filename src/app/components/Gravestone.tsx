@@ -133,7 +133,7 @@ export default function Gravestone({ name = 'LIKITH' }: { name?: string }) {
           background:
             radial-gradient(ellipse at 70% 18%, rgba(232, 228, 216, 0.18) 0%, rgba(232, 228, 216, 0) 40%),
             radial-gradient(ellipse at 50% 90%, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0) 60%),
-            linear-gradient(180deg, #0a0f1c 0%, #1a1530 55%, #2a1a3a 100%);
+            linear-gradient(180deg, var(--bg-base) 0%, var(--bg-raised) 55%, var(--bg-raised) 100%);
           cursor: crosshair;
           box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), inset 0 0 80px rgba(0, 0, 0, 0.4);
         }
@@ -150,7 +150,7 @@ export default function Gravestone({ name = 'LIKITH' }: { name?: string }) {
           position: absolute;
           width: 2px;
           height: 2px;
-          background: #fff;
+          background: var(--fg-strong);
           border-radius: 50%;
           box-shadow:
             40px 40px 0 0 rgba(255, 255, 255, 0.7),
@@ -202,7 +202,7 @@ export default function Gravestone({ name = 'LIKITH' }: { name?: string }) {
           width: 90px;
           height: 90px;
           border-radius: 50%;
-          background: radial-gradient(circle at 35% 35%, #fff 0%, #e8e4d8 45%, #8a8578 100%);
+          background: radial-gradient(circle at 35% 35%, var(--fg-strong) 0%, #e8e4d8 45%, #8a8578 100%);
           box-shadow:
             0 0 50px 15px rgba(232, 228, 216, 0.25),
             0 0 100px 50px rgba(232, 228, 216, 0.1),
@@ -240,9 +240,9 @@ export default function Gravestone({ name = 'LIKITH' }: { name?: string }) {
           right: -5%;
           height: 100px;
           background:
-            radial-gradient(ellipse 400px 80px at 15% 100%, #0a0818 0%, #0a0818 40%, transparent 70%),
-            radial-gradient(ellipse 600px 110px at 50% 100%, #110d22 0%, #110d22 35%, transparent 65%),
-            radial-gradient(ellipse 500px 100px at 85% 100%, #0a0818 0%, #0a0818 40%, transparent 70%);
+            radial-gradient(ellipse 400px 80px at 15% 100%, var(--bg-base) 0%, var(--bg-base) 40%, transparent 70%),
+            radial-gradient(ellipse 600px 110px at 50% 100%, var(--bg-base) 0%, var(--bg-base) 35%, transparent 65%),
+            radial-gradient(ellipse 500px 100px at 85% 100%, var(--bg-base) 0%, var(--bg-base) 40%, transparent 70%);
           filter: blur(1px);
         }
 
@@ -269,7 +269,7 @@ export default function Gravestone({ name = 'LIKITH' }: { name?: string }) {
           left: 0;
           right: 0;
           height: 32%;
-          background: linear-gradient(180deg, rgba(20, 30, 25, 0) 0%, rgba(12, 18, 14, 0.7) 20%, #08100a 100%);
+          background: linear-gradient(180deg, rgba(20, 30, 25, 0) 0%, rgba(12, 18, 14, 0.7) 20%, var(--bg-base) 100%);
         }
         .ground::before {
           content: '';
@@ -378,7 +378,7 @@ export default function Gravestone({ name = 'LIKITH' }: { name?: string }) {
           flex-direction: column;
           align-items: center;
           text-align: center;
-          color: #1a1714;
+          color: var(--fg-body);
         }
         .cross {
           font-size: 1.6rem;
@@ -390,7 +390,7 @@ export default function Gravestone({ name = 'LIKITH' }: { name?: string }) {
           font-family: 'UnifrakturMaguntia', serif;
           font-size: 1.8rem;
           letter-spacing: 0.15em;
-          color: #1a1612;
+          color: var(--fg-body);
           text-shadow: 0 1px 0 rgba(255, 255, 255, 0.12), 0 -1px 1px rgba(0, 0, 0, 0.7);
           margin-bottom: 14px;
           opacity: 0.85;
@@ -406,7 +406,7 @@ export default function Gravestone({ name = 'LIKITH' }: { name?: string }) {
           font-weight: 900;
           font-size: 2.6rem;
           letter-spacing: 0.12em;
-          color: #1a1612;
+          color: var(--fg-body);
           line-height: 1;
           text-shadow:
             0 2px 0 rgba(255, 255, 255, 0.15),
@@ -417,7 +417,7 @@ export default function Gravestone({ name = 'LIKITH' }: { name?: string }) {
           font-family: 'Cinzel', serif;
           font-size: 0.8rem;
           letter-spacing: 0.2em;
-          color: #1a1612;
+          color: var(--fg-body);
           margin-top: 16px;
           opacity: 0.75;
           text-shadow: 0 1px 0 rgba(255, 255, 255, 0.1), 0 -1px 0 rgba(0, 0, 0, 0.6);
@@ -427,7 +427,7 @@ export default function Gravestone({ name = 'LIKITH' }: { name?: string }) {
           font-style: italic;
           font-size: 0.62rem;
           letter-spacing: 0.08em;
-          color: #1a1612;
+          color: var(--fg-body);
           margin-top: 12px;
           opacity: 0.6;
           max-width: 190px;
@@ -495,7 +495,7 @@ export default function Gravestone({ name = 'LIKITH' }: { name?: string }) {
           transform: translateX(-50%);
           width: 1.5px;
           height: 4px;
-          background: #2a1a10;
+          background: var(--fg-body);
         }
         .flame {
           position: absolute;
@@ -504,7 +504,7 @@ export default function Gravestone({ name = 'LIKITH' }: { name?: string }) {
           width: 11px;
           height: 20px;
           transform: translateX(-50%);
-          background: radial-gradient(ellipse at 50% 80%, #ffb36b 0%, #ff9540 40%, rgba(255, 149, 64, 0) 75%);
+          background: radial-gradient(ellipse at 50% 80%, var(--gold) 0%, var(--gold) 40%, rgba(255, 149, 64, 0) 75%);
           border-radius: 50% 50% 35% 35% / 60% 60% 40% 40%;
           filter: blur(0.4px);
           animation: flicker 0.12s ease-in-out infinite alternate;
@@ -517,7 +517,7 @@ export default function Gravestone({ name = 'LIKITH' }: { name?: string }) {
           content: '';
           position: absolute;
           inset: 20% 20% 35% 20%;
-          background: radial-gradient(ellipse at 50% 100%, #fff 0%, #ffd37a 40%, transparent 70%);
+          background: radial-gradient(ellipse at 50% 100%, var(--fg-strong) 0%, #ffd37a 40%, transparent 70%);
           border-radius: 50%;
         }
         @keyframes flicker {
@@ -538,7 +538,7 @@ export default function Gravestone({ name = 'LIKITH' }: { name?: string }) {
         .ember {
           position: absolute;
           border-radius: 50%;
-          background: #ffb36b;
+          background: var(--gold);
           box-shadow: 0 0 6px 2px rgba(255, 149, 64, 0.6);
           opacity: 0;
           animation: float 8s linear infinite;
@@ -607,7 +607,7 @@ export default function Gravestone({ name = 'LIKITH' }: { name?: string }) {
           font-family: 'Cinzel', serif;
           font-size: 0.7rem;
           letter-spacing: 0.4em;
-          color: rgba(232, 228, 216, 0.25);
+          color: var(--fg-muted);
           text-transform: uppercase;
           pointer-events: none;
         }
