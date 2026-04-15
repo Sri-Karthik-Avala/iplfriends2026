@@ -18,7 +18,10 @@ export function getResolvedTheme(): Theme {
     const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
     if (stored === 'dark' || stored === 'light') return stored;
   } catch {}
-  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  // When matchMedia is unavailable (very old browsers / JSDOM), default to
+  // 'dark' so we stay consistent with themeInitScript's catch-all fallback.
+  const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? true;
+  return prefersDark ? 'dark' : 'light';
 }
 
 export function setTheme(next: Theme): void {
