@@ -79,11 +79,11 @@ export default function ProfilePage() {
   const img = imgRaw.split('#')[0];
 
   const RankDot = ({ rank, sz }: { rank: number; sz: number }) => {
-    const bg = rank === 1 ? '#FABB18' : rank === 2 ? '#C0C0C0' : rank === 3 ? '#CD7F32' : 'var(--muted)';
+    const bg = rank === 1 ? 'var(--gold)' : rank === 2 ? 'var(--silver)' : rank === 3 ? 'var(--bronze)' : 'var(--fg-muted)';
     return (
       <div style={{
         width: sz, height: sz, borderRadius: '50%', background: bg,
-        color: rank <= 3 ? '#000' : '#fff', display: 'flex', alignItems: 'center',
+        color: rank <= 3 ? 'var(--bg-base)' : 'var(--fg-strong)', display: 'flex', alignItems: 'center',
         justifyContent: 'center', fontWeight: 800, fontSize: sz * 0.35, flexShrink: 0,
         boxShadow: rank <= 3 ? `0 0 6px ${bg}` : 'none'
       }}>{rank}</div>
@@ -96,7 +96,7 @@ export default function ProfilePage() {
 
       {/* Hero: image left + stats right */}
       <div className="prof-hero" style={{ '--tc': tc } as React.CSSProperties}>
-        <div className="prof-img-wrap" style={{ background: `linear-gradient(135deg, ${tc}50 0%, #111 100%)` }}>
+        <div className="prof-img-wrap" style={{ background: `linear-gradient(135deg, ${tc}50 0%, var(--bg-base) 100%)` }}>
           <img src={img} alt={player.name} className="prof-img" />
         </div>
         <div className="prof-info">
@@ -228,7 +228,8 @@ export default function ProfilePage() {
         }
         .prof-name {
           font-size: 1.6rem; font-weight: 900; line-height: 1;
-          margin: 0 0 0.8rem; text-transform: uppercase; color: #fff;
+          margin: 0 0 0.8rem; text-transform: uppercase; color: var(--fg-strong);
+          font-family: var(--font-display);
         }
         .prof-stats { display: flex; gap: 0.4rem; flex-wrap: wrap; }
         .prof-st {
@@ -238,7 +239,7 @@ export default function ProfilePage() {
         }
         .prof-st-n {
           display: block; font-size: 1.15rem; font-weight: 800;
-          color: #fff; line-height: 1.1;
+          color: var(--fg-strong); line-height: 1.1;
         }
         .prof-st-l {
           display: block; font-size: 0.5rem; font-weight: 600;
@@ -261,7 +262,7 @@ export default function ProfilePage() {
         /* AI */
         .prof-ai {
           background: linear-gradient(135deg, rgba(236,28,36,0.05) 0%, rgba(255,255,60,0.05) 100%);
-          border: 1px solid rgba(255,255,255,0.06);
+          border: 1px solid var(--border);
           border-radius: 8px; padding: 0.75rem;
         }
         .prof-ai-h {
@@ -281,13 +282,13 @@ export default function ProfilePage() {
         .prof-form { display: flex; flex-direction: column; gap: 0.35rem; }
         .prof-fr {
           display: flex; align-items: center; gap: 0.6rem;
-          padding: 0.55rem 0.65rem; background: rgba(255,255,255,0.02);
-          border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;
+          padding: 0.55rem 0.65rem; background: var(--bg-raised);
+          border: 1px solid var(--border); border-radius: 8px;
           cursor: pointer; transition: background 0.15s;
         }
-        .prof-fr:hover { background: rgba(255,255,255,0.06); }
+        .prof-fr:hover { background: var(--bg-raised-strong); }
         .prof-fr-name {
-          font-size: 0.82rem; color: #fff; font-weight: 500;
+          font-size: 0.82rem; color: var(--fg-strong); font-weight: 500;
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
         .prof-fr-date { font-size: 0.68rem; color: var(--muted-foreground); }
@@ -297,11 +298,11 @@ export default function ProfilePage() {
         .prof-exp {
           display: flex; align-items: center; justify-content: center;
           width: 100%; padding: 0.5rem; margin-top: 0.4rem;
-          background: transparent; border: 1px dashed rgba(255,255,255,0.12);
-          border-radius: 8px; color: var(--muted-foreground);
+          background: transparent; border: 1px dashed var(--border);
+          border-radius: 8px; color: var(--fg-muted);
           font-size: 0.75rem; cursor: pointer;
         }
-        .prof-exp:hover { color: var(--foreground); border-color: rgba(255,255,255,0.25); }
+        .prof-exp:hover { color: var(--fg-strong); border-color: var(--border-strong); }
 
         /* ===== DESKTOP ===== */
         @media (min-width: 768px) {
