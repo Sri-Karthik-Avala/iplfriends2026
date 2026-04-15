@@ -1,7 +1,8 @@
 import './globals.css';
-import Link from 'next/link';
 import { Playfair_Display, Inter } from 'next/font/google';
 import { themeInitScript } from '@/lib/theme';
+import Nav from './components/Nav';
+import TricolorStripe from './components/TricolorStripe';
 
 const playfair = Playfair_Display({
   subsets: ['latin'],
@@ -34,17 +35,8 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body>
-        <nav style={{ padding: '1rem 2rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <h2 style={{ color: 'var(--gold)', margin: 0, fontSize: '1.5rem', fontFamily: 'var(--font-display)' }}>
-              🏆 IPL FRIENDS
-            </h2>
-          </Link>
-          <div>
-            <Link href="/" style={{ marginRight: '1.5rem', fontWeight: 600, color: 'var(--fg-body)' }}>Leaderboard</Link>
-            <Link href="/admin" style={{ fontWeight: 600, color: 'var(--fg-muted)' }}>Admin Panel</Link>
-          </div>
-        </nav>
+        <Nav />
+        <TricolorStripe />
         <main>{children}</main>
       </body>
     </html>
