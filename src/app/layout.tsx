@@ -1,5 +1,23 @@
 import './globals.css';
-import Link from 'next/link';
+import { Playfair_Display, Inter } from 'next/font/google';
+import { themeInitScript } from '@/lib/theme';
+import Nav from './components/Nav';
+import TricolorStripe from './components/TricolorStripe';
+
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  weight: ['700', '900'],
+  style: ['normal', 'italic'],
+  variable: '--font-display',
+  display: 'swap',
+});
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-body',
+  display: 'swap',
+});
 
 export const metadata = {
   title: 'IPL Friends League',
@@ -12,31 +30,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${playfair.variable} ${inter.variable}`} suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=UnifrakturMaguntia&display=swap"
-          rel="stylesheet"
-        />
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body>
-        <nav style={{ padding: '1rem 2rem', background: 'var(--panel-bg)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <h2 style={{ color: 'var(--neon-blue)', margin: 0, fontSize: '1.5rem', fontFamily: 'Outfit, sans-serif', cursor: 'pointer' }}>
-              🏆 IPL FRIENDS
-            </h2>
-          </Link>
-          <div>
-            <Link href="/" style={{ marginRight: '1.5rem', fontWeight: 600, color: 'var(--text-main)', transition: 'color 0.3s' }}>Leaderboard</Link>
-            <Link href="/admin" style={{ fontWeight: 600, color: 'var(--text-muted)', transition: 'color 0.3s' }}>Admin Panel</Link>
-          </div>
-        </nav>
+        <Nav />
+        <TricolorStripe />
         <main>{children}</main>
-        <div className="boundary-shot" aria-hidden="true">
-          <div className="ball" />
-        </div>
       </body>
     </html>
   );

@@ -1,9 +1,16 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { TEAMS } from '@/lib/constants';
-import { parseImagePos } from '@/lib/image';
+import {
+  buildPlayerMetaMap,
+  buildStats as buildStatsFn,
+  computeAchievements as computeAchievementsFn,
+} from '@/lib/leaderboard';
+import PlayerRow from './components/PlayerRow';
 import Gravestone from './components/Gravestone';
+import AnimatedList, { AnimatedItem } from './components/AnimatedList';
+import ConfettiBurst from './components/ConfettiBurst';
 import Link from 'next/link';
 
 // Extract player title from AI summary text
@@ -34,6 +41,9 @@ export default function LeaderboardPage() {
   // Expand state
   const [showAllCompleted, setShowAllCompleted] = useState(false);
   const [showAllUpcoming, setShowAllUpcoming] = useState(false);
+
+  const prevLeaderIdRef = useRef<string | null>(null);
+  const [confettiTrigger, setConfettiTrigger] = useState(0);
 
   useEffect(() => {
     fetchData();
@@ -79,114 +89,27 @@ export default function LeaderboardPage() {
     return completedMatches.find(m => m.summary && !m.cancelled);
   }, [completedMatches]);
 
+  // Watch for leader changes and trigger confetti
+  useEffect(() => {
+    if (loading) return;
+    const currentLeaderId = leaderboard[0]?.player?.id || null;
+    if (prevLeaderIdRef.current && currentLeaderId && prevLeaderIdRef.current !== currentLeaderId) {
+      setConfettiTrigger(t => t + 1);
+    }
+    prevLeaderIdRef.current = currentLeaderId;
+  }, [leaderboard, loading]);
+
   const latestSummary = latestSummaryMatch?.summary || null;
 
   // Per-player aggregated stats + achievement badges computed from full match history
   const playerMeta = useMemo(() => {
-    type Entry = {
-      played: number;
-      ranks: number[];          // finishing ranks in order played
-      my11: number[];           // dream11 scores in order played
-      firsts: number;
-      seconds: number;
-      thirds: number;
-      topThrees: number;
-      dnps: number;
-      bestMy11: number;
+    const { metaMap, totalCompleted } = buildPlayerMetaMap(matches, players);
+    return {
+      totalCompleted,
+      buildStats: (pid: string) => buildStatsFn(pid, metaMap, totalCompleted),
+      computeAchievements: (pid: string) => computeAchievementsFn(pid, metaMap, totalCompleted, leaderboard),
     };
-    const metaMap: Record<string, Entry> = {};
-    players.forEach((p: any) => {
-      metaMap[p.id] = { played: 0, ranks: [], my11: [], firsts: 0, seconds: 0, thirds: 0, topThrees: 0, dnps: 0, bestMy11: 0 };
-    });
-
-    // Chronological order (oldest first) of real scored matches only
-    const scored = matches
-      .filter((m: any) => m.results && m.results.length > 0 && !m.cancelled)
-      .sort((a: any, b: any) => Number(a.id) - Number(b.id));
-
-    scored.forEach((m: any) => {
-      const playedIds = new Set<string>();
-      m.results.forEach((r: any) => {
-        const e = metaMap[r.playerId];
-        if (!e) return;
-        playedIds.add(r.playerId);
-        e.played += 1;
-        e.ranks.push(r.rank);
-        e.my11.push(r.dream11Points || 0);
-        if (r.rank === 1) e.firsts += 1;
-        if (r.rank === 2) e.seconds += 1;
-        if (r.rank === 3) e.thirds += 1;
-        if (r.rank <= 3) e.topThrees += 1;
-        if ((r.dream11Points || 0) > e.bestMy11) e.bestMy11 = r.dream11Points || 0;
-      });
-      // Mark DNP for players not in this match's results
-      players.forEach((p: any) => {
-        if (!playedIds.has(p.id) && metaMap[p.id]) metaMap[p.id].dnps += 1;
-      });
-    });
-
-    const totalCompleted = scored.length;
-    const entries = Object.values(metaMap);
-    const maxFirsts = Math.max(0, ...entries.map(e => e.firsts));
-    const maxSeconds = Math.max(0, ...entries.map(e => e.seconds));
-    const maxThirds = Math.max(0, ...entries.map(e => e.thirds));
-    const maxMy11 = Math.max(0, ...entries.map(e => e.bestMy11));
-    const maxDnps = Math.max(0, ...entries.map(e => e.dnps));
-    const leaderId = leaderboard[0]?.player?.id;
-
-    const computeAchievements = (playerId: string) => {
-      const s = metaMap[playerId];
-      const badges: { emoji: string; label: string; kind: 'gold' | 'silver' | 'bronze' | 'blue' | 'red' }[] = [];
-      if (!s || totalCompleted === 0) return badges;
-
-      if (playerId === leaderId) {
-        badges.push({ emoji: '🏆', label: 'Leader', kind: 'gold' });
-      }
-      if (maxFirsts >= 2 && s.firsts === maxFirsts) {
-        badges.push({ emoji: '🥇', label: `${s.firsts}× Gold`, kind: 'gold' });
-      }
-      if (maxSeconds >= 2 && s.seconds === maxSeconds) {
-        badges.push({ emoji: '🥈', label: `${s.seconds}× Silver`, kind: 'silver' });
-      }
-      if (maxThirds >= 2 && s.thirds === maxThirds) {
-        badges.push({ emoji: '🥉', label: `${s.thirds}× Bronze`, kind: 'bronze' });
-      }
-      if (maxMy11 > 0 && s.bestMy11 === maxMy11) {
-        badges.push({ emoji: '⚡', label: `Peak ${Math.round(maxMy11)}`, kind: 'gold' });
-      }
-      if (totalCompleted >= 3 && s.played === totalCompleted) {
-        badges.push({ emoji: '💎', label: 'Ever Present', kind: 'blue' });
-      }
-      if (s.ranks.length >= 3 && s.ranks.slice(-3).every(r => r <= 3)) {
-        badges.push({ emoji: '🔥', label: 'Hot Streak', kind: 'gold' });
-      } else if (s.played >= 4 && s.topThrees / s.played >= 0.6) {
-        badges.push({ emoji: '🎯', label: 'Clutch', kind: 'blue' });
-      }
-      if (maxDnps >= 3 && s.dnps === maxDnps) {
-        badges.push({ emoji: '💀', label: `${s.dnps} DNP`, kind: 'red' });
-      }
-      return badges.slice(0, 4);
-    };
-
-    const buildStats = (playerId: string) => {
-      const s = metaMap[playerId];
-      if (!s || s.played === 0) {
-        return { played: 0, totalCompleted, avgRank: '—', avgMy11: '—' };
-      }
-      const avgRank = Math.round(s.ranks.reduce((a, b) => a + b, 0) / s.played).toString();
-      const avgMy11 = Math.round(s.my11.reduce((a, b) => a + b, 0) / s.played).toString();
-      return { played: s.played, totalCompleted, avgRank, avgMy11 };
-    };
-
-    return { computeAchievements, buildStats, totalCompleted };
   }, [matches, players, leaderboard]);
-
-  const getRankDisplay = (idx: number) => {
-    if (idx === 0) return { emoji: '🥇', className: 'rank-1' };
-    if (idx === 1) return { emoji: '🥈', className: 'rank-2' };
-    if (idx === 2) return { emoji: '🥉', className: 'rank-3' };
-    return { emoji: null, className: '' };
-  };
 
   return (
     <div className="container animate-fade" style={{ paddingTop: '1rem' }}>
@@ -195,9 +118,33 @@ export default function LeaderboardPage() {
         {/* === SECTION 1: LEADERBOARD (Player Cards) === */}
         <div>
           <div className="section-header">
-            <h2>Season Standings</h2>
-            <p>Points = Players - Rank + 1. More competition, more points! The HIGHEST total wins the season!</p>
+            <div className="kicker">Season 26</div>
+            <h2>Season <em>Standings</em></h2>
+            <p>Points = Players − Rank + 1. More competition, more points. Highest total wins the season.</p>
           </div>
+
+          {!loading && leaderboard.length > 0 && (
+            (() => {
+              const top = leaderboard[0];
+              const topTitle = latestSummary ? extractPlayerTitle(latestSummary, top.player.name) : null;
+              return (
+                <div className="leader-spotlight">
+                  <span className="leader-spotlight-icon" aria-hidden="true">✦</span>
+                  <span>
+                    <span className="leader-spotlight-name">{top.player.name}</span>
+                    {' leads with '}
+                    <span className="leader-spotlight-pts">{top._sum.leaguePoints || 0} pts</span>
+                    {topTitle && (
+                      <>
+                        {' · '}
+                        <span className="leader-spotlight-title">"{topTitle}"</span>
+                      </>
+                    )}
+                  </span>
+                </div>
+              );
+            })()
+          )}
 
           {loading && <p style={{ color: 'var(--muted-foreground)' }}>Loading...</p>}
 
@@ -208,96 +155,51 @@ export default function LeaderboardPage() {
           )}
 
           {!loading && players.length > 0 && leaderboard.length === 0 && (
-            players.map(p => {
-              const { src, objectPosition } = parseImagePos(p.imageUrl);
-              return (
-              <div key={p.id} className="player-card">
-                <div className="player-rank numeric">-</div>
-                <img src={src} alt={p.name} className="player-avatar" style={{ objectPosition }} />
-                <div className="player-info">
-                  <div className="player-name">{p.name}</div>
-                  <div className="player-team">{p.team}</div>
-                </div>
-                <div className="player-points">
-                  <div className="points-value">0</div>
-                  <div className="points-label">rank pts</div>
-                </div>
-              </div>
-            );
-            })
+            players.map((p, idx) => (
+              <PlayerRow
+                key={p.id}
+                rank={idx + 1}
+                player={{
+                  id: p.id,
+                  name: p.name,
+                  team: p.team,
+                  teamColor: p.teamColor,
+                  imageUrl: p.imageUrl,
+                }}
+                points={0}
+                variant="card"
+                asLink={false}
+              />
+            ))
           )}
 
-          {!loading && leaderboard.map((lb: any, idx: number) => {
-            const rank = getRankDisplay(idx);
-            const playerTitle = latestSummary ? extractPlayerTitle(latestSummary, lb.player.name) : null;
-            const stats = playerMeta.buildStats(lb.player.id);
-            const badges = playerMeta.computeAchievements(lb.player.id);
-            const { src: avatarSrc, objectPosition: avatarPos } = parseImagePos(lb.player.imageUrl);
-            return (
-              <Link
-                key={lb.player.id}
-                href={`/profile/${lb.player.name.toLowerCase()}`}
-                style={{ textDecoration: 'none', color: 'inherit' }}
-              >
-              <div
-                className={`player-card ${rank.className}`}
-              >
-                <div className={`player-rank ${rank.emoji ? '' : 'numeric'}`}>
-                  {rank.emoji || `#${idx + 1}`}
-                </div>
-                <img src={avatarSrc} alt={lb.player.name} className="player-avatar" style={{ borderColor: lb.player.teamColor, objectPosition: avatarPos }} />
-                <div className="player-info">
-                  <div className="player-name">
-                    {lb.player.name}
-                    <span className="mobile-points">{lb._sum.leaguePoints || 0}<span className="mobile-points-label"> pts</span></span>
-                  </div>
-                  {playerTitle ? (
-                    <div className="player-title">"{playerTitle}"</div>
-                  ) : (
-                    <div className="player-team">{lb.player.team}</div>
-                  )}
-                  {stats.played > 0 && (
-                    <div className="mobile-stats">
-                      <span>{stats.played}/{stats.totalCompleted} played</span>
-                      <span>avg #{stats.avgRank}</span>
-                      <span>my11 {stats.avgMy11}</span>
-                    </div>
-                  )}
-                  {badges.length > 0 && (
-                    <div className="player-badges">
-                      {badges.map((b, i) => (
-                        <span key={i} className={`achievement-chip chip-${b.kind}`} title={b.label}>
-                          <span className="chip-emoji">{b.emoji}</span>
-                          <span className="chip-label">{b.label}</span>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="player-points">
-                  <div className="points-value">{lb._sum.leaguePoints || 0}</div>
-                  <div className="points-label">rank pts</div>
-                </div>
-                {stats.played > 0 && (
-                  <>
-                    <div className="player-stat">
-                      <div className="stat-value">{stats.played}<span className="stat-sub">/{stats.totalCompleted}</span></div>
-                      <div className="stat-label">played</div>
-                    </div>
-                    <div className="player-stat">
-                      <div className="stat-value">#{stats.avgRank}</div>
-                      <div className="stat-label">avg rank</div>
-                    </div>
-                    <div className="player-stat player-stat-my11">
-                      <div className="stat-value">{stats.avgMy11}</div>
-                      <div className="stat-label">avg my11</div>
-                    </div>
-                  </>
-                )}
-              </div>
-              </Link>
-            );
-          })}
+          <AnimatedList>
+            {!loading && leaderboard.map((lb: any, idx: number) => {
+              const rank = idx + 1;
+              const playerTitle = latestSummary ? extractPlayerTitle(latestSummary, lb.player.name) : null;
+              const stats = playerMeta.buildStats(lb.player.id);
+              const badges = playerMeta.computeAchievements(lb.player.id);
+              return (
+                <AnimatedItem key={lb.player.id} layoutId={`player-${lb.player.id}`}>
+                  <PlayerRow
+                    rank={rank}
+                    player={{
+                      id: lb.player.id,
+                      name: lb.player.name,
+                      team: lb.player.team,
+                      teamColor: lb.player.teamColor,
+                      imageUrl: lb.player.imageUrl,
+                    }}
+                    points={lb._sum.leaguePoints || 0}
+                    title={playerTitle}
+                    stats={stats}
+                    badges={badges}
+                    variant="card"
+                  />
+                </AnimatedItem>
+              );
+            })}
+          </AnimatedList>
         </div>
 
         {/* === SECTION 2: LATEST AI MATCH COMMENTARY === */}
@@ -428,6 +330,7 @@ export default function LeaderboardPage() {
 
       {/* === MEMORIAL — in place of footer === */}
       <Gravestone name="LIKITH" />
+      <ConfettiBurst trigger={confettiTrigger} />
 
     </div>
   );

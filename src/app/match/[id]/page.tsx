@@ -52,7 +52,7 @@ export default function MatchDetailPage() {
   if (loading) {
     return (
       <div className="match-detail-container animate-fade">
-        <p style={{ color: 'var(--muted-foreground)', textAlign: 'center', padding: '4rem 0' }}>Loading...</p>
+        <p style={{ color: 'var(--fg-muted)', textAlign: 'center', padding: '4rem 0' }}>Loading...</p>
       </div>
     );
   }
@@ -64,7 +64,7 @@ export default function MatchDetailPage() {
         <div style={{ textAlign: 'center', padding: '4rem 0' }}>
           <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🔍</span>
           <h2 style={{ marginBottom: '0.5rem' }}>Match not found</h2>
-          <p style={{ color: 'var(--muted-foreground)' }}>This match doesn't exist or the URL is invalid.</p>
+          <p style={{ color: 'var(--fg-muted)' }}>This match doesn't exist or the URL is invalid.</p>
         </div>
       </div>
     );
@@ -86,16 +86,16 @@ export default function MatchDetailPage() {
             <img src={getTeamLogo(t2)} alt={t2} className="team-logo" style={{ width: 48, height: 48, filter: 'grayscale(1)' }} />
           </div>
           <div>
-            <h2 style={{ fontWeight: 600, letterSpacing: '-0.025em', textDecoration: 'line-through' }}>{match.name}</h2>
-            <p style={{ color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>
+            <h2 style={{ fontWeight: 600, letterSpacing: '-0.025em', textDecoration: 'line-through', fontFamily: 'var(--font-display)' }}>{match.name}</h2>
+            <p style={{ color: 'var(--fg-muted)', fontSize: '0.875rem' }}>
               {new Date(match.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} • Match #{match.id}
             </p>
           </div>
         </div>
         <div style={{ textAlign: 'center', padding: '3rem 0' }}>
           <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>❌</span>
-          <h3 style={{ marginBottom: '0.5rem' }}>Match Cancelled</h3>
-          <p style={{ color: 'var(--muted-foreground)' }}>This match was cancelled. No points were awarded.</p>
+          <h3 style={{ marginBottom: '0.5rem', fontFamily: 'var(--font-display)', color: 'var(--fg-strong)' }}>Match Cancelled</h3>
+          <p style={{ color: 'var(--fg-muted)' }}>This match was cancelled. No points were awarded.</p>
         </div>
       </div>
     );
@@ -112,16 +112,16 @@ export default function MatchDetailPage() {
             <img src={getTeamLogo(t2)} alt={t2} className="team-logo" style={{ width: 48, height: 48 }} />
           </div>
           <div>
-            <h2 style={{ fontWeight: 600, letterSpacing: '-0.025em' }}>{match.name}</h2>
-            <p style={{ color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>
+            <h2 style={{ fontWeight: 600, letterSpacing: '-0.025em', fontFamily: 'var(--font-display)' }}>{match.name}</h2>
+            <p style={{ color: 'var(--fg-muted)', fontSize: '0.875rem' }}>
               {new Date(match.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} • Match #{match.id}
             </p>
           </div>
         </div>
         <div style={{ textAlign: 'center', padding: '3rem 0' }}>
           <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>⏳</span>
-          <h3 style={{ marginBottom: '0.5rem' }}>Results not yet available</h3>
-          <p style={{ color: 'var(--muted-foreground)' }}>Check back after the match!</p>
+          <h3 style={{ marginBottom: '0.5rem', fontFamily: 'var(--font-display)', color: 'var(--fg-strong)' }}>Results not yet available</h3>
+          <p style={{ color: 'var(--fg-muted)' }}>Check back after the match!</p>
         </div>
       </div>
     );
@@ -141,8 +141,8 @@ export default function MatchDetailPage() {
           <img src={getTeamLogo(t2)} alt={t2} className="team-logo" style={{ width: 48, height: 48 }} />
         </div>
         <div>
-          <h2 style={{ fontWeight: 600, letterSpacing: '-0.025em' }}>{match.name}</h2>
-          <p style={{ color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>
+          <h2 style={{ fontWeight: 600, letterSpacing: '-0.025em', fontFamily: 'var(--font-display)' }}>{match.name}</h2>
+          <p style={{ color: 'var(--fg-muted)', fontSize: '0.875rem' }}>
             {new Date(match.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} • Match #{match.id}
           </p>
         </div>
@@ -172,8 +172,8 @@ export default function MatchDetailPage() {
                       {res.rank === 1 ? '🥇' : res.rank === 2 ? '🥈' : res.rank === 3 ? '🥉' : `#${res.rank}`}
                     </td>
                     <td>{getPlayerName(res.playerId)}</td>
-                    <td style={{ fontWeight: 'bold', color: 'var(--foreground)' }}>+{res.leaguePoints}</td>
-                    <td style={{ color: 'var(--muted-foreground)' }}>{res.dream11Points}</td>
+                    <td style={{ fontWeight: 'bold', color: 'var(--fg-strong)' }}>+{res.leaguePoints}</td>
+                    <td style={{ color: 'var(--fg-muted)' }}>{res.dream11Points}</td>
                   </tr>
                 ))}
               </tbody>
