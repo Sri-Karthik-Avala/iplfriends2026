@@ -46,11 +46,11 @@ export default function PlayerProfile({ playerData, matches, overallRank, totalL
   const img = imgRaw.split('#')[0];
 
   const RankDot = ({ rank, sz }: { rank: number; sz: number }) => {
-    const bg = rank === 1 ? '#FABB18' : rank === 2 ? '#C0C0C0' : rank === 3 ? '#CD7F32' : 'var(--muted)';
+    const bg = rank === 1 ? 'var(--gold)' : rank === 2 ? 'var(--silver)' : rank === 3 ? 'var(--bronze)' : 'var(--bg-raised)';
     return (
       <div style={{
         width: sz, height: sz, borderRadius: '50%', background: bg,
-        color: rank <= 3 ? '#000' : '#fff', display: 'flex', alignItems: 'center',
+        color: rank <= 3 ? 'var(--bg-base)' : 'var(--fg-strong)', display: 'flex', alignItems: 'center',
         justifyContent: 'center', fontWeight: 800, fontSize: sz * 0.35, flexShrink: 0,
         boxShadow: rank <= 3 ? `0 0 6px ${bg}` : 'none'
       }}>{rank}</div>
@@ -93,11 +93,11 @@ export default function PlayerProfile({ playerData, matches, overallRank, totalL
                 <span className="pp-st-n">#{overallRank}</span>
                 <span className="pp-st-l">Rank</span>
               </div>
-              <div className="pp-st" style={{ borderColor: 'var(--primary)' }}>
+              <div className="pp-st" style={{ borderColor: 'var(--gold)' }}>
                 <span className="pp-st-n">{totalLeaguePoints}</span>
                 <span className="pp-st-l">Points</span>
               </div>
-              <div className="pp-st" style={{ borderColor: 'var(--ring)' }}>
+              <div className="pp-st" style={{ borderColor: 'var(--border-strong)' }}>
                 <span className="pp-st-n">{stats.played}</span>
                 <span className="pp-st-l">Played</span>
               </div>
@@ -117,7 +117,7 @@ export default function PlayerProfile({ playerData, matches, overallRank, totalL
               </div>
             ) : (
               <div className="pp-comm-col">
-                <div className="pp-ai" style={{ color: 'var(--muted-foreground)', fontSize: '0.78rem', padding: '0.5rem' }}>No AI commentary yet.</div>
+                <div className="pp-ai" style={{ color: 'var(--fg-muted)', fontSize: '0.78rem', padding: '0.5rem' }}>No AI commentary yet.</div>
               </div>
             )}
           </div>
@@ -126,7 +126,7 @@ export default function PlayerProfile({ playerData, matches, overallRank, totalL
           <div className="pp-section">
             <div className="pp-sec-t">Recent Form</div>
             {stats.last5.length === 0 ? (
-              <p style={{ color: 'var(--muted-foreground)', fontSize: '0.8rem' }}>No matches yet.</p>
+              <p style={{ color: 'var(--fg-muted)', fontSize: '0.8rem' }}>No matches yet.</p>
             ) : (
               <div className="pp-form">
                 {stats.last5.map((m, i) => (
@@ -157,7 +157,7 @@ export default function PlayerProfile({ playerData, matches, overallRank, totalL
                               <div className="pp-td">{new Date(m.match.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</div>
                             </td>
                             <td>{m.score}</td>
-                            <td style={{ fontWeight: 700, color: 'var(--foreground)' }}>+{m.lp}</td>
+                            <td style={{ fontWeight: 700, color: 'var(--fg-strong)' }}>+{m.lp}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -179,13 +179,13 @@ export default function PlayerProfile({ playerData, matches, overallRank, totalL
         }
         .pp-card {
           position: relative; width: 100%; max-width: 850px;
-          background: var(--card); display: flex; flex-direction: column;
+          background: var(--bg-raised); display: flex; flex-direction: column;
           flex-shrink: 0; min-height: 100%;
         }
         .pp-x {
           position: fixed; top: 10px; right: 10px; z-index: 20;
           width: 34px; height: 34px; border-radius: 50%;
-          background: rgba(0,0,0,0.6); color: #fff; font-size: 1.3rem;
+          background: rgba(0,0,0,0.6); color: var(--fg-strong); font-size: 1.3rem;
           border: 1px solid rgba(255,255,255,0.15);
           display: flex; align-items: center; justify-content: center;
           cursor: pointer; backdrop-filter: blur(4px);
@@ -203,7 +203,7 @@ export default function PlayerProfile({ playerData, matches, overallRank, totalL
         }
         .pp-hero-fade {
           position: absolute; bottom: 0; left: 0; right: 0; height: 50%;
-          background: linear-gradient(to top, var(--card) 0%, transparent 100%);
+          background: linear-gradient(to top, var(--bg-raised) 0%, transparent 100%);
           pointer-events: none;
         }
         .pp-hero-info {
@@ -217,7 +217,7 @@ export default function PlayerProfile({ playerData, matches, overallRank, totalL
         }
         .pp-hero-name {
           font-size: 1.8rem; font-weight: 900; line-height: 1;
-          margin: 0; text-transform: uppercase; color: #fff;
+          margin: 0; text-transform: uppercase; color: var(--fg-strong);
           text-shadow: 0 2px 12px rgba(0,0,0,0.8);
         }
 
@@ -242,11 +242,11 @@ export default function PlayerProfile({ playerData, matches, overallRank, totalL
         }
         .pp-st-n {
           display: block; font-size: 1.05rem; font-weight: 800;
-          color: #fff; line-height: 1.1;
+          color: var(--fg-strong); line-height: 1.1;
         }
         .pp-st-l {
           display: block; font-size: 0.5rem; font-weight: 600;
-          text-transform: uppercase; color: var(--muted-foreground);
+          text-transform: uppercase; color: var(--fg-muted);
           letter-spacing: 0.4px;
         }
         .pp-comm-col { min-width: 0; }
@@ -256,15 +256,15 @@ export default function PlayerProfile({ playerData, matches, overallRank, totalL
           border-radius: 8px; padding: 0.5rem; height: 100%;
         }
         .pp-ai-h {
-          font-weight: 700; font-size: 0.72rem; color: var(--foreground);
+          font-weight: 700; font-size: 0.72rem; color: var(--fg-body);
           margin: 0 0 0.1rem; line-height: 1.3;
         }
         .pp-ai-s {
-          font-size: 0.58rem; color: var(--muted-foreground);
+          font-size: 0.58rem; color: var(--fg-muted);
           font-family: monospace; margin: 0 0 0.2rem;
         }
         .pp-ai-t {
-          font-size: 0.7rem; color: var(--muted-foreground);
+          font-size: 0.7rem; color: var(--fg-muted);
           line-height: 1.35; margin: 0 0 0.1rem;
         }
 
@@ -275,7 +275,7 @@ export default function PlayerProfile({ playerData, matches, overallRank, totalL
         }
         .pp-sec-t {
           font-size: 0.58rem; font-weight: 700; text-transform: uppercase;
-          color: var(--muted-foreground); letter-spacing: 0.5px;
+          color: var(--fg-muted); letter-spacing: 0.5px;
           margin-bottom: 0.35rem;
         }
         .pp-form { display: flex; flex-direction: column; gap: 0.25rem; }
@@ -287,17 +287,17 @@ export default function PlayerProfile({ playerData, matches, overallRank, totalL
         }
         .pp-fr:active { background: rgba(255,255,255,0.07); }
         .pp-fr-name {
-          flex: 1; font-size: 0.68rem; color: #fff;
+          flex: 1; font-size: 0.68rem; color: var(--fg-strong);
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .pp-fr-pts { font-size: 0.62rem; color: var(--muted-foreground); }
-        .pp-fr-lp { font-size: 0.62rem; color: var(--foreground); font-weight: 700; min-width: 22px; text-align: right; }
+        .pp-fr-pts { font-size: 0.62rem; color: var(--fg-muted); }
+        .pp-fr-lp { font-size: 0.62rem; color: var(--fg-strong); font-weight: 700; min-width: 22px; text-align: right; }
 
         .pp-exp {
           display: flex; align-items: center; justify-content: center;
           width: 100%; padding: 0.4rem; margin-top: 0.25rem;
           background: transparent; border: 1px dashed rgba(255,255,255,0.1);
-          border-radius: 6px; color: var(--muted-foreground);
+          border-radius: 6px; color: var(--fg-muted);
           font-size: 0.65rem; cursor: pointer;
         }
         .pp-tw {
@@ -307,22 +307,22 @@ export default function PlayerProfile({ playerData, matches, overallRank, totalL
         .pp-tb { width: 100%; border-collapse: collapse; }
         .pp-tb th {
           text-align: left; padding: 0.35rem 0.4rem; font-size: 0.55rem;
-          font-weight: 600; color: var(--muted-foreground);
+          font-weight: 600; color: var(--fg-muted);
           text-transform: uppercase; background: rgba(0,0,0,0.3);
           border-bottom: 1px solid rgba(255,255,255,0.06);
         }
         .pp-tb td {
           padding: 0.35rem 0.4rem; font-size: 0.68rem; vertical-align: middle;
           border-bottom: 1px solid rgba(255,255,255,0.04);
-          color: var(--muted-foreground); cursor: pointer;
+          color: var(--fg-muted); cursor: pointer;
         }
         .pp-tb tr:last-child td { border-bottom: none; }
         .pp-tn {
-          font-size: 0.64rem; color: #fff;
+          font-size: 0.64rem; color: var(--fg-strong);
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
           max-width: 120px;
         }
-        .pp-td { font-size: 0.5rem; color: var(--muted-foreground); }
+        .pp-td { font-size: 0.5rem; color: var(--fg-muted); }
 
         /* ===== DESKTOP ===== */
         @media (min-width: 768px) {
@@ -357,7 +357,7 @@ export default function PlayerProfile({ playerData, matches, overallRank, totalL
           .pp-dk-name .pp-badge { font-size: 0.68rem; padding: 0.25rem 0.75rem; margin-bottom: 0.5rem; }
           .pp-dk-title {
             font-size: 2.4rem; font-weight: 900; line-height: 1;
-            margin: 0; text-transform: uppercase; color: #fff;
+            margin: 0; text-transform: uppercase; color: var(--fg-strong);
             text-shadow: 0 0 10px color-mix(in srgb, var(--tc) 50%, transparent);
           }
           .pp-content { flex: 1; min-width: 0; }
