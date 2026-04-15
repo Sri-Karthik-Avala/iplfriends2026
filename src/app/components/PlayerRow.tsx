@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import { parseImagePos } from '@/lib/image';
 import type { Achievement, PlayerStats } from '@/lib/leaderboard';
+import { m, LazyMotion, domAnimation } from 'motion/react';
 
 // Roman numeral mapping for ranks 1-20 (covers the league comfortably).
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X',
@@ -44,49 +45,55 @@ export default function PlayerRow({
   const showBadges = badges.length > 0 && variant === 'card';
 
   const rowContent = (
-    <div className={`player-row ${rankClass}`}>
-      <div className="player-rank-numeral">{ROMAN[rank] || `#${rank}`}</div>
-      <img
-        src={avatarSrc || 'https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png'}
-        alt={player.name}
-        className="player-photo"
-        style={{
-          objectPosition: avatarPos,
-          borderRightColor: player.teamColor || 'var(--border-strong)',
-        }}
-      />
-      <div className="player-info">
-        <div className="player-name-row">
-          <span className="player-name">{player.name}</span>
-          <span className="player-pts">
-            {points}
-            <span className="player-pts-label">pts</span>
-          </span>
+    <LazyMotion features={domAnimation} strict>
+      <m.div
+        className={`player-row ${rankClass}`}
+        whileHover={{ y: -2 }}
+        transition={{ duration: 0.18, ease: 'easeOut' }}
+      >
+        <div className="player-rank-numeral">{ROMAN[rank] || `#${rank}`}</div>
+        <img
+          src={avatarSrc || 'https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png'}
+          alt={player.name}
+          className="player-photo"
+          style={{
+            objectPosition: avatarPos,
+            borderRightColor: player.teamColor || 'var(--border-strong)',
+          }}
+        />
+        <div className="player-info">
+          <div className="player-name-row">
+            <span className="player-name">{player.name}</span>
+            <span className="player-pts">
+              {points}
+              <span className="player-pts-label">pts</span>
+            </span>
+          </div>
+          {title ? (
+            <div className="player-title">"{title}"</div>
+          ) : player.team ? (
+            <div className="player-title">{player.team}</div>
+          ) : null}
+          {showStats && stats && (
+            <div className="player-stats">
+              <span>{stats.played}/{stats.totalCompleted} played</span>
+              <span>avg #{stats.avgRank}</span>
+              <span>my11 {stats.avgMy11}</span>
+            </div>
+          )}
+          {showBadges && (
+            <div className="player-badges">
+              {badges.map((b, i) => (
+                <span key={i} className={`player-chip chip-${b.kind}`} title={b.label}>
+                  <span className="chip-emoji">{b.emoji}</span>
+                  <span className="chip-label">{b.label}</span>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
-        {title ? (
-          <div className="player-title">"{title}"</div>
-        ) : player.team ? (
-          <div className="player-title">{player.team}</div>
-        ) : null}
-        {showStats && stats && (
-          <div className="player-stats">
-            <span>{stats.played}/{stats.totalCompleted} played</span>
-            <span>avg #{stats.avgRank}</span>
-            <span>my11 {stats.avgMy11}</span>
-          </div>
-        )}
-        {showBadges && (
-          <div className="player-badges">
-            {badges.map((b, i) => (
-              <span key={i} className={`player-chip chip-${b.kind}`} title={b.label}>
-                <span className="chip-emoji">{b.emoji}</span>
-                <span className="chip-label">{b.label}</span>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+      </m.div>
+    </LazyMotion>
   );
 
   if (asLink && variant === 'card') {
