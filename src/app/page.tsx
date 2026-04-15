@@ -108,6 +108,29 @@ export default function LeaderboardPage() {
             <p>Points = Players − Rank + 1. More competition, more points. Highest total wins the season.</p>
           </div>
 
+          {!loading && leaderboard.length > 0 && (
+            (() => {
+              const top = leaderboard[0];
+              const topTitle = latestSummary ? extractPlayerTitle(latestSummary, top.player.name) : null;
+              return (
+                <div className="leader-spotlight">
+                  <span className="leader-spotlight-icon" aria-hidden="true">✦</span>
+                  <span>
+                    <span className="leader-spotlight-name">{top.player.name}</span>
+                    {' leads with '}
+                    <span className="leader-spotlight-pts">{top._sum.leaguePoints || 0} pts</span>
+                    {topTitle && (
+                      <>
+                        {' · '}
+                        <span className="leader-spotlight-title">"{topTitle}"</span>
+                      </>
+                    )}
+                  </span>
+                </div>
+              );
+            })()
+          )}
+
           {loading && <p style={{ color: 'var(--muted-foreground)' }}>Loading...</p>}
 
           {!loading && players.length === 0 && (
