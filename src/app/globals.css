@@ -471,6 +471,47 @@ button {
 .commentary-head-spark { color: var(--gold); }
 .commentary-body { font-size: var(--fs-small); line-height: 1.6; color: var(--fg-body); white-space: pre-wrap; }
 
+/* === AI summary card (consumed by the leaderboard "Latest Match Commentary" block) === */
+.ai-summary-card {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--gold);
+  border-radius: var(--radius-md);
+  padding: 1.1rem 1.2rem;
+  box-shadow: var(--shadow-card);
+  /* No max-height or overflow — the whole summary must remain visible, however
+     long it grows. Parent container scrolls with the page. */
+}
+.ai-summary-card .summary-player-line {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1rem;
+  color: var(--fg-strong);
+  margin: 0.6rem 0 0.15rem;
+  line-height: 1.25;
+}
+.ai-summary-card .summary-player-line:first-child { margin-top: 0; }
+.ai-summary-card .summary-stats-line {
+  font-size: var(--fs-tiny);
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+  margin: 0 0 0.35rem;
+  letter-spacing: 0.2px;
+}
+.ai-summary-card .summary-text-line {
+  font-size: var(--fs-small);
+  color: var(--fg-body);
+  line-height: 1.55;
+  margin: 0 0 0.25rem;
+}
+
+@media (max-width: 640px) {
+  .ai-summary-card { padding: 0.9rem 1rem; }
+  .ai-summary-card .summary-player-line { font-size: 0.9rem; }
+  .ai-summary-card .summary-stats-line { font-size: 0.6rem; }
+  .ai-summary-card .summary-text-line { font-size: 0.8rem; line-height: 1.5; }
+}
+
 /* === Badges / buttons === */
 .badge {
   display: inline-flex;
