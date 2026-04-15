@@ -9,6 +9,7 @@ import {
 } from '@/lib/leaderboard';
 import PlayerRow from './components/PlayerRow';
 import Gravestone from './components/Gravestone';
+import AnimatedList, { AnimatedItem } from './components/AnimatedList';
 import Link from 'next/link';
 
 // Extract player title from AI summary text
@@ -158,30 +159,33 @@ export default function LeaderboardPage() {
             ))
           )}
 
-          {!loading && leaderboard.map((lb: any, idx: number) => {
-            const rank = idx + 1;
-            const playerTitle = latestSummary ? extractPlayerTitle(latestSummary, lb.player.name) : null;
-            const stats = playerMeta.buildStats(lb.player.id);
-            const badges = playerMeta.computeAchievements(lb.player.id);
-            return (
-              <PlayerRow
-                key={lb.player.id}
-                rank={rank}
-                player={{
-                  id: lb.player.id,
-                  name: lb.player.name,
-                  team: lb.player.team,
-                  teamColor: lb.player.teamColor,
-                  imageUrl: lb.player.imageUrl,
-                }}
-                points={lb._sum.leaguePoints || 0}
-                title={playerTitle}
-                stats={stats}
-                badges={badges}
-                variant="card"
-              />
-            );
-          })}
+          <AnimatedList>
+            {!loading && leaderboard.map((lb: any, idx: number) => {
+              const rank = idx + 1;
+              const playerTitle = latestSummary ? extractPlayerTitle(latestSummary, lb.player.name) : null;
+              const stats = playerMeta.buildStats(lb.player.id);
+              const badges = playerMeta.computeAchievements(lb.player.id);
+              return (
+                <AnimatedItem key={lb.player.id} layoutId={`player-${lb.player.id}`}>
+                  <PlayerRow
+                    rank={rank}
+                    player={{
+                      id: lb.player.id,
+                      name: lb.player.name,
+                      team: lb.player.team,
+                      teamColor: lb.player.teamColor,
+                      imageUrl: lb.player.imageUrl,
+                    }}
+                    points={lb._sum.leaguePoints || 0}
+                    title={playerTitle}
+                    stats={stats}
+                    badges={badges}
+                    variant="card"
+                  />
+                </AnimatedItem>
+              );
+            })}
+          </AnimatedList>
         </div>
 
         {/* === SECTION 2: LATEST AI MATCH COMMENTARY === */}
