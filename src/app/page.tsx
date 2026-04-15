@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { TEAMS } from '@/lib/constants';
 import {
   buildPlayerMetaMap,
@@ -10,6 +10,7 @@ import {
 import PlayerRow from './components/PlayerRow';
 import Gravestone from './components/Gravestone';
 import AnimatedList, { AnimatedItem } from './components/AnimatedList';
+import ConfettiBurst from './components/ConfettiBurst';
 import Link from 'next/link';
 
 // Extract player title from AI summary text
@@ -40,6 +41,9 @@ export default function LeaderboardPage() {
   // Expand state
   const [showAllCompleted, setShowAllCompleted] = useState(false);
   const [showAllUpcoming, setShowAllUpcoming] = useState(false);
+
+  const prevLeaderIdRef = useRef<string | null>(null);
+  const [confettiTrigger, setConfettiTrigger] = useState(0);
 
   useEffect(() => {
     fetchData();
@@ -84,6 +88,16 @@ export default function LeaderboardPage() {
   const latestSummaryMatch = useMemo(() => {
     return completedMatches.find(m => m.summary && !m.cancelled);
   }, [completedMatches]);
+
+  // Watch for leader changes and trigger confetti
+  useEffect(() => {
+    if (loading) return;
+    const currentLeaderId = leaderboard[0]?.player?.id || null;
+    if (prevLeaderIdRef.current && currentLeaderId && prevLeaderIdRef.current !== currentLeaderId) {
+      setConfettiTrigger(t => t + 1);
+    }
+    prevLeaderIdRef.current = currentLeaderId;
+  }, [leaderboard, loading]);
 
   const latestSummary = latestSummaryMatch?.summary || null;
 
@@ -316,6 +330,7 @@ export default function LeaderboardPage() {
 
       {/* === MEMORIAL — in place of footer === */}
       <Gravestone name="LIKITH" />
+      <ConfettiBurst trigger={confettiTrigger} />
 
     </div>
   );
