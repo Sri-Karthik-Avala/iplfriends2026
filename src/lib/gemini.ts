@@ -29,7 +29,15 @@ async function callOpenAI(systemPrompt: string, userPrompt: string): Promise<str
     }
     const data = await response.json();
     const content = data?.choices?.[0]?.message?.content;
-    return (typeof content === 'string' && content.trim().length > 0) ? content : null;
+    const finishReason = data?.choices?.[0]?.finish_reason;
+    if (finishReason && finishReason !== 'stop') {
+      console.warn(`OpenAI response finish_reason=${finishReason}. Summary may be truncated.`);
+    }
+    if (typeof content === 'string' && content.trim().length > 0) {
+      console.log(`OpenAI gpt-4o-mini produced summary: ${content.length} chars, ${content.split('\n').length} lines.`);
+      return content;
+    }
+    return null;
   } catch (err) {
     console.warn("OpenAI call threw:", err);
     return null;
@@ -42,7 +50,11 @@ async function callGemini(systemPrompt: string, userPrompt: string): Promise<str
     return null;
   }
   try {
-    const model = 'gemini-2.5-flash';
+    // gemini-2.0-flash has NO thinking-token overhead — 2.5-flash reasons before
+    // generating and will burn the entire output budget on thinking, producing a
+    // truncated response (we hit this: only first player block emitted). 2.0-flash
+    // is fast, cheap, and writes the full summary on the first try.
+    const model = 'gemini-2.0-flash';
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`;
     const response = await fetch(url, {
       method: 'POST',
@@ -52,7 +64,8 @@ async function callGemini(systemPrompt: string, userPrompt: string): Promise<str
         contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
         generationConfig: {
           temperature: 0.9,
-          maxOutputTokens: 2000
+          maxOutputTokens: 4096,
+          topP: 0.95
         }
       })
     });
@@ -62,10 +75,19 @@ async function callGemini(systemPrompt: string, userPrompt: string): Promise<str
       return null;
     }
     const data = await response.json();
-    const parts = data?.candidates?.[0]?.content?.parts;
+    const candidate = data?.candidates?.[0];
+    const finishReason = candidate?.finishReason;
+    const parts = candidate?.content?.parts;
     const text = Array.isArray(parts)
       ? parts.map((p: any) => p?.text || '').join('')
       : '';
+
+    if (finishReason && finishReason !== 'STOP') {
+      console.warn(`Gemini response finishReason=${finishReason} (length=${text.length}). Summary may be truncated.`);
+    } else {
+      console.log(`Gemini ${model} produced summary: ${text.length} chars, ${text.split('\n').length} lines.`);
+    }
+
     return text.trim().length > 0 ? text : null;
   } catch (err) {
     console.warn("Gemini call threw:", err);
