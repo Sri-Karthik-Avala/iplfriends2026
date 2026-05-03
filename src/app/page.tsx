@@ -329,7 +329,10 @@ export default function LeaderboardPage() {
       </div>
 
       {/* === MEMORIAL — in place of footer === */}
-      <Gravestone name="LIKITH" />
+      <div className="memorial-row">
+        <Gravestone name="LIKITH" />
+        <Gravestone name="UMESH" />
+      </div>
       <ConfettiBurst trigger={confettiTrigger} />
 
     </div>

@@ -594,6 +594,18 @@ button {
   font-weight: 700;
 }
 
+/* === Memorial row: side-by-side gravestones on desktop, stacked on mobile === */
+.memorial-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-top: 3rem;
+}
+.memorial-row > section { margin-top: 0 !important; }
+@media (max-width: 900px) {
+  .memorial-row { grid-template-columns: 1fr; gap: 1rem; }
+}
+
 /* === Match detail page === */
 .match-detail-container { max-width: 960px; margin: 0 auto; padding: 1rem; }
 .match-detail-back {

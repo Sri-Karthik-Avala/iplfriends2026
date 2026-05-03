@@ -40,6 +40,5 @@ insert into public.players (id, name, team, team_color, image_url) values
 ('3b83648a-69f8-4036-96ec-c3e03102d9c3', 'Donga', 'Sunrisers Hyderabad', '#F26522', 'https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png'),
 ('3b83648a-69f8-4036-96ec-c3e03102d9c4', 'Sampath', 'Sunrisers Hyderabad', '#F26522', 'https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png'),
 ('3b83648a-69f8-4036-96ec-c3e03102d9c5', 'Ak', 'Kolkata Knight Riders', '#3A225D', 'https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png'),
-('3b83648a-69f8-4036-96ec-c3e03102d9c6', 'Umesh', 'Mumbai Indians', '#004BA0', 'https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png'),
 ('3b83648a-69f8-4036-96ec-c3e03102d9c7', 'Rohit', 'Punjab Kings', '#D71920', 'https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png')
 on conflict (id) do nothing;
