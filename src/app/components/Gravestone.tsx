@@ -2,8 +2,16 @@
 
 import { useMemo } from 'react';
 
-export default function Gravestone({ name = 'LIKITH' }: { name?: string }) {
-  // Pre-generate grass blades and ember particles
+type Props = {
+  /** Single name (back-compat). Use `names` to render multiple stones in one scene. */
+  name?: string;
+  names?: string[];
+};
+
+export default function Gravestone({ name, names }: Props) {
+  const stones = (names && names.length > 0) ? names : [name ?? 'LIKITH'];
+  const isMulti = stones.length > 1;
+
   const grassBlades = useMemo(() => {
     return Array.from({ length: 140 }, () => ({
       left: Math.random() * 100,
@@ -14,8 +22,8 @@ export default function Gravestone({ name = 'LIKITH' }: { name?: string }) {
   }, []);
 
   const embers = useMemo(() => {
-    return Array.from({ length: 20 }, () => ({
-      left: 42 + Math.random() * 18,
+    return Array.from({ length: 24 }, () => ({
+      left: 30 + Math.random() * 40,
       bottom: 22 + Math.random() * 10,
       size: 2 + Math.random() * 2.5,
       delay: Math.random() * -8,
@@ -24,8 +32,21 @@ export default function Gravestone({ name = 'LIKITH' }: { name?: string }) {
     }));
   }, []);
 
+  // Distribute stones horizontally across the ground.
+  const positions = useMemo(() => {
+    const n = stones.length;
+    if (n === 1) return [50];
+    if (n === 2) return [38, 70];
+    // Even spread for 3+
+    return stones.map((_, i) => 22 + (56 / (n - 1)) * i);
+  }, [stones]);
+
   return (
-    <section className="graveyard-scene" aria-label={`In loving memory of ${name}`}>
+    <section
+      className="graveyard-scene"
+      data-multi={isMulti ? 'true' : 'false'}
+      aria-label={`In loving memory of ${stones.join(', ')}`}
+    >
       <div className="stars" />
       <div className="moon" />
       <div className="hills" />
@@ -70,34 +91,45 @@ export default function Gravestone({ name = 'LIKITH' }: { name?: string }) {
 
       <div className="fog layer-2" />
 
-      <div className="gravestone-wrap">
-        <div className="mound" />
-        <div className="gravestone">
-          <div className="stone">
-            <div className="engraving">
-              <div className="cross">✞</div>
-              <div className="rip">R.I.P</div>
-              <div className="divider" />
-              <div className="name-engraved">{name}</div>
-              <div className="dates">— ∗ —</div>
-              <div className="epitaph">
-                Fell gloriously in the Friends League. His ducks shall not be forgotten.
+      {stones.map((stoneName, i) => (
+        <div
+          key={`${stoneName}-${i}`}
+          className="gravestone-wrap"
+          style={{
+            ['--x' as any]: `${positions[i]}%`,
+            ['--rise-delay' as any]: `${i * 0.25}s`,
+            ['--breath-delay' as any]: `${2 + i * 0.6}s`,
+            ['--tilt' as any]: i % 2 === 0 ? '-0.4deg' : '0.5deg'
+          }}
+        >
+          <div className="mound" />
+          <div className="gravestone">
+            <div className="stone">
+              <div className="engraving">
+                <div className="cross">✞</div>
+                <div className="rip">R.I.P</div>
+                <div className="divider" />
+                <div className="name-engraved">{stoneName}</div>
+                <div className="dates">— ∗ —</div>
+                <div className="epitaph">
+                  Fell gloriously in the Friends League. His ducks shall not be forgotten.
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="flowers">
-            <div className="flower" />
-            <div className="flower" />
-            <div className="flower" />
-          </div>
+            <div className="flowers">
+              <div className="flower" />
+              <div className="flower" />
+              <div className="flower" />
+            </div>
 
-          <div className="candle">
-            <div className="wick" />
-            <div className="flame" />
+            <div className="candle">
+              <div className="wick" />
+              <div className="flame" />
+            </div>
           </div>
         </div>
-      </div>
+      ))}
 
       <div className="embers">
         {embers.map((e, i) => (
@@ -308,24 +340,32 @@ export default function Gravestone({ name = 'LIKITH' }: { name?: string }) {
         .gravestone-wrap {
           position: absolute;
           bottom: 14%;
-          left: 50%;
+          left: var(--x, 50%);
           width: 260px;
           filter: drop-shadow(0 30px 40px rgba(0, 0, 0, 0.9)) drop-shadow(0 0 30px rgba(255, 149, 64, 0.08));
-          animation: rise 2s cubic-bezier(0.22, 1, 0.36, 1), gentleBreath 7s ease-in-out infinite 2s;
+          animation:
+            rise 2s cubic-bezier(0.22, 1, 0.36, 1) var(--rise-delay, 0s) backwards,
+            gentleBreath 7s ease-in-out infinite var(--breath-delay, 2s);
+        }
+        .graveyard-scene[data-multi='true'] .gravestone-wrap {
+          width: 220px;
         }
         @keyframes rise {
           0% { opacity: 0; transform: translateX(-50%) translateY(30px) rotate(-1deg); }
-          100% { opacity: 1; transform: translateX(-50%) translateY(0) rotate(-0.4deg); }
+          100% { opacity: 1; transform: translateX(-50%) translateY(0) rotate(var(--tilt, -0.4deg)); }
         }
         @keyframes gentleBreath {
-          0%, 100% { transform: translateX(-50%) translateY(0) rotate(-0.4deg); }
-          50% { transform: translateX(-50%) translateY(-2px) rotate(0.3deg); }
+          0%, 100% { transform: translateX(-50%) translateY(0) rotate(var(--tilt, -0.4deg)); }
+          50% { transform: translateX(-50%) translateY(-2px) rotate(calc(var(--tilt, -0.4deg) + 0.7deg)); }
         }
 
         .gravestone {
           position: relative;
           width: 100%;
           height: 310px;
+        }
+        .graveyard-scene[data-multi='true'] .gravestone {
+          height: 270px;
         }
 
         .stone {
@@ -413,6 +453,9 @@ export default function Gravestone({ name = 'LIKITH' }: { name?: string }) {
             0 -1px 0 rgba(0, 0, 0, 0.8),
             1px 1px 2px rgba(0, 0, 0, 0.6);
         }
+        .graveyard-scene[data-multi='true'] .name-engraved {
+          font-size: 2.1rem;
+        }
         .dates {
           font-family: 'Cinzel', serif;
           font-size: 0.8rem;
@@ -433,6 +476,11 @@ export default function Gravestone({ name = 'LIKITH' }: { name?: string }) {
           max-width: 190px;
           line-height: 1.5;
           text-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+        .graveyard-scene[data-multi='true'] .epitaph {
+          font-size: 0.55rem;
+          max-width: 160px;
+          margin-top: 8px;
         }
 
         .mound {
@@ -615,12 +663,25 @@ export default function Gravestone({ name = 'LIKITH' }: { name?: string }) {
         @media (max-width: 640px) {
           .graveyard-scene { height: 460px; }
           .gravestone-wrap { width: 210px; }
+          .graveyard-scene[data-multi='true'] .gravestone-wrap { width: 150px; }
           .gravestone { height: 260px; }
+          .graveyard-scene[data-multi='true'] .gravestone { height: 200px; }
           .name-engraved { font-size: 2rem; }
+          .graveyard-scene[data-multi='true'] .name-engraved { font-size: 1.3rem; letter-spacing: 0.08em; }
           .rip { font-size: 1.4rem; }
+          .graveyard-scene[data-multi='true'] .rip { font-size: 1rem; margin-bottom: 8px; }
           .moon { width: 60px; height: 60px; top: 8%; right: 8%; }
           .tree { width: 80px; height: 160px; left: 2%; }
           .epitaph { font-size: 0.55rem; max-width: 160px; }
+          .graveyard-scene[data-multi='true'] .epitaph { font-size: 0.45rem; max-width: 110px; margin-top: 4px; }
+          .graveyard-scene[data-multi='true'] .engraving { inset: 26px 14px 16px 14px; }
+          .graveyard-scene[data-multi='true'] .cross { font-size: 1.1rem; margin-bottom: 2px; }
+          .graveyard-scene[data-multi='true'] .divider { margin: 2px 0 8px; }
+          .graveyard-scene[data-multi='true'] .dates { font-size: 0.6rem; margin-top: 8px; }
+          .graveyard-scene[data-multi='true'] .candle { width: 11px; height: 26px; right: -4px; }
+          .graveyard-scene[data-multi='true'] .flame { width: 8px; height: 14px; top: -14px; }
+          .graveyard-scene[data-multi='true'] .flowers { width: 44px; left: -12px; }
+          .graveyard-scene[data-multi='true'] .mound { width: 200px; }
         }
       `}</style>
     </section>
